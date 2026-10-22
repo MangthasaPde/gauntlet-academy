@@ -1226,5 +1226,335 @@
     ]
    }
   ]
+ },
+ "0.1": {
+  "summary": "What a program is, text and variables, functions, return and f-strings.",
+  "pages": [
+   {
+    "title": "A program is a list of instructions",
+    "body": [
+     "A Python **program** is a text file, usually ending in `.py`. Python reads it from the top and runs one line at a time.",
+     "`print(...)` shows something on the screen. Text goes inside quotes so Python knows it is data, not a command."
+    ],
+    "code": "print(\"Hello!\")\nprint(\"This runs second.\")",
+    "output": "Hello!\nThis runs second."
+   },
+   {
+    "title": "Variables are names for values",
+    "body": [
+     "A **variable** is a label you stick on a value: `name = \"Ada\"`. The `=` means \"store this\", not \"is equal to\".",
+     "Text in quotes is called a **string**. You can join strings with `+`."
+    ],
+    "code": "name = \"Ada\"\nprint(\"Hello, \" + name)",
+    "output": "Hello, Ada"
+   },
+   {
+    "type": "check",
+    "prompt": "What does this print?",
+    "options": [
+     "Hi Sam",
+     "Hi name",
+     "name",
+     "An error"
+    ],
+    "answer": 0,
+    "explain": "name holds \"Sam\", so \"Hi \" + name joins the two strings into \"Hi Sam\".",
+    "code": "name = \"Sam\"\nprint(\"Hi \" + name)"
+   },
+   {
+    "title": "Functions are reusable recipes",
+    "body": [
+     "A **function** packages steps under a name. `def` starts it, the names in brackets are its inputs (called **parameters**), and the indented lines are its body.",
+     "`return` hands a value back to whoever called the function. Indent the body with four spaces."
+    ],
+    "code": "def shout(word):\n    return word.upper() + \"!\"\n\nprint(shout(\"hello\"))",
+    "output": "HELLO!"
+   },
+   {
+    "title": "f-strings drop values into text",
+    "body": [
+     "Put an `f` before the quotes and wrap names in `{}` to insert their values. It is easier to read than lots of `+`.",
+     "`.strip()` removes spaces from both ends of a string. `\"  hi  \".strip()` gives `\"hi\"`."
+    ],
+    "code": "name = \"  Ada  \".strip()\nprint(f\"Hello, {name}!\")",
+    "output": "Hello, Ada!"
+   },
+   {
+    "type": "check",
+    "prompt": "Why should a function **return** its result instead of printing it?",
+    "options": [
+     "return is faster to type",
+     "The calling code (and the tests) can use the value",
+     "print does not work inside functions",
+     "return also saves the file"
+    ],
+    "answer": 1,
+    "explain": "print only shows text on the screen. return gives the value back, so other code can store it, check it or build on it."
+   },
+   {
+    "title": "Making a choice with if",
+    "body": [
+     "Sometimes you need a fallback. `if not text:` is true when a string is empty, because an empty string counts as \"nothing\".",
+     "You will learn decisions properly in Mission 0.3; this one line is all you need now."
+    ],
+    "code": "def label(text):\n    text = text.strip()\n    if not text:\n        text = \"unknown\"\n    return f\"[{text}]\"\n\nprint(label(\"   \"))",
+    "output": "[unknown]"
+   },
+   {
+    "title": "Your mission: greet",
+    "body": [
+     "Write `greet(name)` so it returns `\"Hello, <name>!\"` with spaces around the name removed.",
+     "If the name is empty or only spaces, return `\"Hello, friend!\"` instead."
+    ],
+    "note": "Click **Create file**, open it in your editor, replace the `raise NotImplementedError` line with your code, save, then click **Run tests**."
+   }
+  ]
+ },
+ "0.2": {
+  "summary": "Whole and decimal numbers, arithmetic, rounding, and rejecting bad input.",
+  "pages": [
+   {
+    "title": "Two kinds of numbers",
+    "body": [
+     "**int** is a whole number like `3` or `-12`. **float** is a number with a decimal point like `2.5`.",
+     "Numbers do not go in quotes. `\"3\"` is text that happens to contain a digit."
+    ],
+    "code": "apples = 3\nprice = 0.5\nprint(apples * price)",
+    "output": "1.5"
+   },
+   {
+    "title": "Python as a calculator",
+    "body": [
+     "`+` add, `-` subtract, `*` multiply, `/` divide. Division with `/` always gives a float, even `8 / 2`.",
+     "Brackets work like in maths: `(2 + 3) * 4` is 20."
+    ],
+    "code": "print(8 / 2)\nprint((2 + 3) * 4)\nprint(10 - 2.5)",
+    "output": "4.0\n20\n7.5"
+   },
+   {
+    "type": "check",
+    "prompt": "What does this print?",
+    "options": [
+     "30",
+     "3",
+     "33",
+     "13"
+    ],
+    "answer": 0,
+    "explain": "Brackets first: 1 + 2 is 3, then 3 * 10 is 30.",
+    "code": "print((1 + 2) * 10)"
+   },
+   {
+    "title": "Percentages",
+    "body": [
+     "To add 10% to a value, multiply by `1 + 10 / 100`, which is `1.1`.",
+     "Store in-between results in variables so each line does one clear thing."
+    ],
+    "code": "bill = 40\ntip_percent = 15\nwith_tip = bill * (1 + tip_percent / 100)\nprint(with_tip)",
+    "output": "46.0"
+   },
+   {
+    "title": "Rounding money",
+    "body": [
+     "Division can produce long decimals: `10 / 3` is `3.3333333333333335`.",
+     "`round(value, 2)` rounds to two decimal places, which is what we want for money."
+    ],
+    "code": "share = 10 / 3\nprint(round(share, 2))",
+    "output": "3.33"
+   },
+   {
+    "type": "check",
+    "prompt": "Why does `\"20\" + 1` fail?",
+    "options": [
+     "20 is too big",
+     "\"20\" is text, and Python will not add text and a number",
+     "+ only works on decimals",
+     "It does not fail; it gives 21"
+    ],
+    "answer": 1,
+    "explain": "Quotes make \"20\" a string. Use the number 20 (no quotes) or convert with int(\"20\")."
+   },
+   {
+    "title": "Saying no to bad input",
+    "body": [
+     "Splitting a bill between 0 people makes no sense. Rather than crash with a confusing error or return nonsense, stop clearly.",
+     "`raise ValueError(\"message\")` stops the function and reports what went wrong. Check inputs **before** doing the maths."
+    ],
+    "code": "def per_person(total, people):\n    if people < 1:\n        raise ValueError(\"Need at least one person\")\n    return total / people",
+    "note": "The tests check that ValueError is raised, so raising here is part of the job, not a mistake."
+   },
+   {
+    "title": "Your mission: split_bill",
+    "body": [
+     "Write `split_bill(total, people, tip_percent)`: add the tip, divide by `people`, and return the share rounded to 2 decimals.",
+     "Raise `ValueError` when `people` is less than 1."
+    ],
+    "code": "split_bill(100, 4, 10)  # 27.5\nsplit_bill(50, 3, 0)    # 16.67"
+   }
+  ]
+ },
+ "0.3": {
+  "summary": "True and False, comparisons, if / elif / else, and checking in the right order.",
+  "pages": [
+   {
+    "title": "True and False",
+    "body": [
+     "A **comparison** asks a yes-or-no question and gives back `True` or `False`.",
+     "`>` greater than, `>=` greater or equal, `<` less than, `<=` less or equal, `==` equal, `!=` not equal. Note `==` (a question) is different from `=` (store a value)."
+    ],
+    "code": "print(7 > 3)\nprint(2 == 5)\nprint(4 <= 4)",
+    "output": "True\nFalse\nTrue"
+   },
+   {
+    "title": "if runs code only when it is True",
+    "body": [
+     "`if condition:` followed by an indented block runs that block only when the condition is True.",
+     "`else:` gives a block to run when it is False."
+    ],
+    "code": "temperature = 30\nif temperature > 25:\n    print(\"Take water\")\nelse:\n    print(\"Take a jacket\")",
+    "output": "Take water"
+   },
+   {
+    "type": "check",
+    "prompt": "What does this print?",
+    "options": [
+     "big",
+     "small",
+     "big small",
+     "Nothing"
+    ],
+    "answer": 1,
+    "explain": "3 > 10 is False, so the else block runs.",
+    "code": "n = 3\nif n > 10:\n    print(\"big\")\nelse:\n    print(\"small\")"
+   },
+   {
+    "title": "More than two choices: elif",
+    "body": [
+     "`elif` (short for \"else if\") adds another test. You can have as many as you need.",
+     "Python checks from the top and runs **only the first** branch that is True, then skips the rest."
+    ],
+    "code": "speed = 55\nif speed > 70:\n    print(\"too fast\")\nelif speed > 40:\n    print(\"fine\")\nelse:\n    print(\"slow\")",
+    "output": "fine"
+   },
+   {
+    "title": "Order matters",
+    "body": [
+     "If you test `score >= 50` before `score >= 90`, a score of 95 matches the first test and never reaches the second.",
+     "Put the strictest test first and work down."
+    ],
+    "code": "score = 95\nif score >= 90:\n    print(\"A\")\nelif score >= 50:\n    print(\"pass\")",
+    "output": "A"
+   },
+   {
+    "type": "check",
+    "prompt": "Which condition is True when x is outside 0 to 100?",
+    "options": [
+     "x < 0 and x > 100",
+     "x < 0 or x > 100",
+     "x > 0 or x < 100",
+     "x == 0 or 100"
+    ],
+    "answer": 1,
+    "explain": "or is True when either side is True. A number cannot be both below 0 and above 100, so and would never be True."
+   },
+   {
+    "title": "Combining tests",
+    "body": [
+     "`and` is True only when both sides are True. `or` is True when at least one side is.",
+     "Use them to reject impossible input first, with `raise ValueError(...)` as you did in Mission 0.2."
+    ],
+    "code": "def check_percent(p):\n    if p < 0 or p > 100:\n        raise ValueError(\"percent must be 0 to 100\")\n    return p"
+   },
+   {
+    "title": "Your mission: grade",
+    "body": [
+     "Write `grade(score)`: `\"A\"` for 90+, `\"B\"` for 75+, `\"C\"` for 50+, otherwise `\"F\"`.",
+     "Raise `ValueError` for scores below 0 or above 100. Exactly 90, 75 and 50 belong to the higher grade."
+    ],
+    "code": "grade(90)    # \"A\"\ngrade(74)    # \"C\"\ngrade(49.9)  # \"F\""
+   }
+  ]
+ },
+ "0.4": {
+  "summary": "Lists, for loops, the running-total pattern, and building a new list.",
+  "pages": [
+   {
+    "title": "Lists hold values in order",
+    "body": [
+     "A **list** keeps several values in square brackets: `[3, 1, 2]`. `len(...)` tells you how many there are.",
+     "Positions start at 0, so `scores[0]` is the first item."
+    ],
+    "code": "scores = [70, 85, 90]\nprint(scores[0])\nprint(len(scores))",
+    "output": "70\n3"
+   },
+   {
+    "title": "for loops repeat for each item",
+    "body": [
+     "`for item in a_list:` runs the indented block once per item, with `item` set to each value in turn.",
+     "You pick the name after `for`. Choose one that describes a single item."
+    ],
+    "code": "for score in [70, 85, 90]:\n    print(score + 5)",
+    "output": "75\n90\n95"
+   },
+   {
+    "type": "check",
+    "prompt": "What does this print?",
+    "options": [
+     "1 2 3 on separate lines",
+     "2 4 6 on separate lines",
+     "[2, 4, 6]",
+     "6"
+    ],
+    "answer": 1,
+    "explain": "The loop prints n * 2 once for each item, each on its own line.",
+    "code": "for n in [1, 2, 3]:\n    print(n * 2)"
+   },
+   {
+    "title": "Adding things up",
+    "body": [
+     "Start a **total** at 0 before the loop, then add each item inside the loop.",
+     "`total = total + n` can be written as `total += n`. Both mean the same."
+    ],
+    "code": "total = 0\nfor n in [4, 5, 6]:\n    total += n\nprint(total)",
+    "output": "15"
+   },
+   {
+    "title": "Collecting results in a new list",
+    "body": [
+     "Start with an empty list `[]` and use `.append(value)` to add to the end.",
+     "Building a **new** list leaves the original untouched, so the code that gave you the list is not surprised."
+    ],
+    "code": "names = [\"ada\", \"sam\"]\nloud = []\nfor name in names:\n    loud.append(name.upper())\nprint(loud)\nprint(names)",
+    "output": "['ADA', 'SAM']\n['ada', 'sam']"
+   },
+   {
+    "type": "check",
+    "prompt": "How many times does `for i in range(4):` run its block?",
+    "options": [
+     "3",
+     "4",
+     "5",
+     "Forever"
+    ],
+    "answer": 1,
+    "explain": "range(4) gives 0, 1, 2 and 3: four values, so four runs."
+   },
+   {
+    "title": "Putting it together",
+    "body": [
+     "You can keep a total **and** collect into a list in the same loop. Update the total first, then append it."
+    ],
+    "code": "steps = [1000, 2500, 1500]\nso_far = 0\nprogress = []\nfor s in steps:\n    so_far += s\n    progress.append(so_far)\nprint(progress)",
+    "output": "[1000, 3500, 5000]"
+   },
+   {
+    "title": "Your mission: running_total",
+    "body": [
+     "Write `running_total(numbers)` returning a new list of running totals. `[3, 1, 2]` becomes `[3, 4, 6]`.",
+     "An empty list gives `[]`. Do not change the list you were given."
+    ],
+    "note": "Finish this and you have completed Boot Camp. Room 1 builds on every idea here."
+   }
+  ]
  }
 }

@@ -869,6 +869,222 @@
         "Read the function contract and inspect the test file in verification/.",
         "Work on one test at a time; preserve the exact function names and return shapes."
       ]
+    },
+    {
+      "id": "0.1",
+      "world": 0,
+      "title": "Hello, Python: Your First Function",
+      "lesson": "A program is a file of instructions that Python runs from top to bottom. Text in quotes is a string; a variable is a name for a value. A function is a reusable recipe: it takes inputs (parameters) and hands back a result with return. print() only shows text on the screen; return gives the value back so other code (and the tests) can use it.",
+      "example": "def welcome(city):\n    return f\"Welcome to {city}!\"\n\nprint(welcome(\"Paris\"))  # Welcome to Paris!",
+      "quest": "Implement greet(name). Return \"Hello, <name>!\" with any spaces around the name removed. If the name is empty or only spaces, return \"Hello, friend!\". Example: greet(\"  Ada \") \u2192 \"Hello, Ada!\". Return the text; don't print it.",
+      "path": "world0/level_0_1.py",
+      "quiz": [
+        {
+          "kind": "Predict the Output",
+          "prompt": "What is printed?",
+          "options": [
+            "Python",
+            "Py thon",
+            "first + second",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "+ joins two strings with nothing in between, so \"Py\" + \"thon\" is \"Python\".",
+          "code": "first = \"Py\"\nsecond = \"thon\"\nword = first + second\nprint(word)"
+        },
+        {
+          "kind": "Spot the Bug",
+          "prompt": "Line 4 crashes. Why?",
+          "options": [
+            "Line 1: def needs a type",
+            "Line 2 prints instead of returning, so result is None",
+            "Line 3: you cannot store a function call",
+            "No error"
+          ],
+          "answer": 1,
+          "explanation": "A function without return gives back None. None + 1 is an error. Use return x * 2.",
+          "code": "def double(x):\n    print(x * 2)\nresult = double(4)\nprint(result + 1)"
+        },
+        {
+          "kind": "Concept",
+          "prompt": "What does return do?",
+          "options": [
+            "Shows text on the screen",
+            "Sends a value back to the code that called the function",
+            "Saves the file",
+            "Restarts the function"
+          ],
+          "answer": 1,
+          "explanation": "return ends the function and hands its value back to the caller.",
+          "code": ""
+        }
+      ],
+      "hints": [
+        "Start with name = name.strip() to remove spaces at both ends.",
+        "If the stripped name is empty (if not name:), use \"friend\" instead. Then return f\"Hello, {name}!\"."
+      ]
+    },
+    {
+      "id": "0.2",
+      "world": 0,
+      "title": "Numbers: Split the Bill",
+      "lesson": "Python has whole numbers (int) like 3 and decimals (float) like 2.5. The operators + - * / work as on a calculator; / always gives a decimal. round(x, 2) rounds to two decimal places. When an input makes no sense, raise ValueError to stop with a clear message instead of returning a wrong answer.",
+      "example": "def price_with_tax(price, tax_percent):\n    return round(price * (1 + tax_percent / 100), 2)\n\nprint(price_with_tax(20, 8))  # 21.6",
+      "quest": "Implement split_bill(total, people, tip_percent). Add the tip to the total, divide by the number of people, and return each share rounded to 2 decimal places. Example: split_bill(100, 4, 10) \u2192 27.5. Raise ValueError when people is less than 1.",
+      "path": "world0/level_0_2.py",
+      "quiz": [
+        {
+          "kind": "Predict the Output",
+          "prompt": "What is printed?",
+          "options": [
+            "9",
+            "9.0",
+            "36",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "price * count is 36, and / always produces a float, so 36 / 4 is 9.0.",
+          "code": "price = 12\ncount = 3\ntotal = price * count\nprint(total / 4)"
+        },
+        {
+          "kind": "Spot the Bug",
+          "prompt": "Which line fails, and why?",
+          "options": [
+            "Line 1: numbers cannot be in quotes",
+            "Line 2: \"20\" is text, so text + number fails",
+            "Line 3: print cannot show numbers",
+            "No error"
+          ],
+          "answer": 1,
+          "explanation": "age holds the string \"20\". Write age = 20 (no quotes) or use int(age) + 1.",
+          "code": "age = \"20\"\nnext_year = age + 1\nprint(next_year)"
+        },
+        {
+          "kind": "Concept",
+          "prompt": "What does round(3.14159, 2) give?",
+          "options": [
+            "3",
+            "3.1",
+            "3.14",
+            "3.142"
+          ],
+          "answer": 2,
+          "explanation": "The second argument is the number of decimal places to keep.",
+          "code": ""
+        }
+      ],
+      "hints": [
+        "Check if people < 1 first and raise ValueError.",
+        "share = total * (1 + tip_percent / 100) / people, then return round(share, 2)."
+      ]
+    },
+    {
+      "id": "0.3",
+      "world": 0,
+      "title": "Decisions: The Grade Machine",
+      "lesson": "Comparisons like >, >= and == give True or False. if runs its block only when the condition is True; elif adds another test; else catches everything left. Python checks branches from the top and runs only the first one that is True, so put the strictest test first.",
+      "example": "def ticket(age):\n    if age < 12:\n        return \"child\"\n    elif age >= 65:\n        return \"senior\"\n    else:\n        return \"adult\"",
+      "quest": "Implement grade(score) for a score from 0 to 100. Return \"A\" for 90 and above, \"B\" for 75 and above, \"C\" for 50 and above, otherwise \"F\". Raise ValueError when the score is below 0 or above 100.",
+      "path": "world0/level_0_3.py",
+      "quiz": [
+        {
+          "kind": "Predict the Output",
+          "prompt": "What is printed?",
+          "options": [
+            "hot",
+            "mild",
+            "cold",
+            "mild and cold"
+          ],
+          "answer": 1,
+          "explanation": "18 > 25 is False, 18 > 15 is True, so \"mild\" prints and the else is skipped.",
+          "code": "temp = 18\nif temp > 25: print(\"hot\")\nelif temp > 15: print(\"mild\")\nelse: print(\"cold\")"
+        },
+        {
+          "kind": "Spot the Bug",
+          "prompt": "A score of 95 prints C. Why?",
+          "options": [
+            "elif never runs after an if",
+            "The first True branch wins, so the highest threshold must be checked first",
+            "95 is not >= 90",
+            "print is used wrongly"
+          ],
+          "answer": 1,
+          "explanation": "95 >= 50 is True, so the first branch runs and the elif is skipped. Check >= 90 first.",
+          "code": "score = 95\nif score >= 50:\n    print(\"C\")\nelif score >= 90:\n    print(\"A\")"
+        },
+        {
+          "kind": "Concept",
+          "prompt": "What does == do?",
+          "options": [
+            "Stores a value in a variable",
+            "Asks whether two values are equal",
+            "Adds two values",
+            "Checks only the type"
+          ],
+          "answer": 1,
+          "explanation": "= stores a value. == compares two values and gives True or False.",
+          "code": ""
+        }
+      ],
+      "hints": [
+        "First reject bad scores: if score < 0 or score > 100: raise ValueError(...).",
+        "Then go from the top grade down: if score >= 90: return \"A\", elif score >= 75: return \"B\", and so on."
+      ]
+    },
+    {
+      "id": "0.4",
+      "world": 0,
+      "title": "Loops: Running Totals",
+      "lesson": "A list holds several values in order: [3, 1, 2]. A for loop runs its block once for each item. To add things up, start a total at 0 and add each item to it. To collect results, start with an empty list and append to it. Build a new list rather than changing the one you were given.",
+      "example": "def doubled(numbers):\n    result = []\n    for n in numbers:\n        result.append(n * 2)\n    return result\n\nprint(doubled([1, 2, 3]))  # [2, 4, 6]",
+      "quest": "Implement running_total(numbers). Return a new list where each item is the sum of all numbers up to that point. Example: running_total([3, 1, 2]) \u2192 [3, 4, 6]. An empty list gives []. Do not change the list you were given.",
+      "path": "world0/level_0_4.py",
+      "quiz": [
+        {
+          "kind": "Predict the Output",
+          "prompt": "What is printed?",
+          "options": [
+            "6",
+            "12",
+            "[2, 4, 6]",
+            "246"
+          ],
+          "answer": 1,
+          "explanation": "total goes 0 \u2192 2 \u2192 6 \u2192 12, then 12 is printed once after the loop.",
+          "code": "total = 0\nfor n in [2, 4, 6]:\n    total = total + n\nprint(total)"
+        },
+        {
+          "kind": "Spot the Bug",
+          "prompt": "This prints 3 instead of [1, 2, 3]. Why?",
+          "options": [
+            "Line 1: lists cannot start empty",
+            "Line 3 replaces the list with a number; use totals.append(n)",
+            "Line 2: you cannot loop over a list",
+            "There is no bug"
+          ],
+          "answer": 1,
+          "explanation": "totals = n throws away the list each time. totals.append(n) adds to it instead.",
+          "code": "totals = []\nfor n in [1, 2, 3]:\n    totals = n\nprint(totals)"
+        },
+        {
+          "kind": "Concept",
+          "prompt": "Why build a new list instead of changing the one you were given?",
+          "options": [
+            "New lists are faster",
+            "The caller still has their original data, unchanged",
+            "Lists cannot be changed",
+            "Python requires it"
+          ],
+          "answer": 1,
+          "explanation": "Changing the caller's list can cause surprises elsewhere in their program. A new list is safer.",
+          "code": ""
+        }
+      ],
+      "hints": [
+        "Before the loop, set total = 0 and result = [].",
+        "Inside the loop: total += n, then result.append(total). After the loop, return result."
+      ]
     }
   ],
   "gatekeepers": {

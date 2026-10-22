@@ -95,7 +95,8 @@ def test_timer_origin_and_persistence(client):
     assert client.get('/api/state').json()['hp']==100
 
 def test_content_complete():
-    assert len(game.CUR['levels'])==16 and len(game.BOSSES)==4
+    assert len(game.CUR['levels'])==20 and len(game.BOSSES)==4
+    assert sorted(game.PATHS['levels'])==sorted(l['id'] for l in game.CUR['levels'])
     for level in game.CUR['levels']:
         assert len(level['quiz'])==3
         assert len(level['quiz'][0]['code'].splitlines())==4
@@ -139,11 +140,27 @@ def test_placement_tiers():
     assert tier(3)=='intermediate' and tier(4)=='intermediate'
     assert tier(5)=='advanced' and tier(6)=='advanced'
 
-def test_beginner_full_path_matches_original_rules(client):
+def test_new_coders_start_in_boot_camp(client,monkeypatch):
     s=onboard(client,experience='never')
     assert s['profile']['tier']=='beginner' and s['profile']['skipped']==[]
-    assert s['open_worlds']==[1] and s['current_world']==1
-    assert client.post('/api/quiz/start',json={'kind':'gate','target':'1'}).status_code==403
+    assert s['path_worlds']==[0,1,2,3,4] and s['open_worlds']==[0] and s['current_world']==0
+    assert client.post('/api/lesson/complete',json={'id':'1.1'}).status_code==403
+    # Finishing Boot Camp opens Room 1 and earns a badge.
+    s=game.read();s['completed']=['0.1','0.2','0.3'];game.save(s)
+    trial(client,target='0.4')
+    client.post('/api/initialize',json={'id':'0.4'})
+    monkeypatch.setattr(game,'run_verification',lambda id:(True,'ok'))
+    s=client.post('/api/verify',json={'id':'0.4'}).json()['state']
+    assert s['open_worlds']==[0,1] and s['current_world']==1 and 'Boot Camp Graduate' in s['badges']
+    learn(client,'1.1')
+
+def test_boot_camp_placement_rules(client):
+    assert onboard(client,experience='little')['path_worlds'][0]==0
+    assert onboard(client,experience='little',right=3)['path_worlds']==[1,2,3,4]
+    assert onboard(client,experience='comfortable')['path_worlds']==[1,2,3,4]
+    # Boot Camp stays open to everyone and never blocks Room 1 when it is off the path.
+    s=client.get('/api/state').json();assert s['open_worlds']==[0,1]
+    learn(client,'0.1')
 
 def test_intermediate_places_out_of_basics(client):
     s=onboard(client,right=3)
@@ -159,7 +176,7 @@ def test_advanced_skips_whole_rooms_but_keeps_final_project(client):
     s=onboard(client,right=6)
     p=s['profile']
     assert '1.boss' in p['skipped'] and '2.boss' not in p['skipped'] and '2.4' not in p['skipped']
-    assert s['open_worlds']==[1,2] and s['current_world']==2
+    assert s['open_worlds']==[0,1,2] and s['current_world']==2
     items={x['id']:x for x in client.get('/api/curriculum').json()['items']}
     assert items['2.4']['unlocked'] and items['1.boss']['unlocked']
     # Learning to code only: everything is placed out except the room project.
@@ -168,11 +185,11 @@ def test_advanced_skips_whole_rooms_but_keeps_final_project(client):
 
 def test_goal_path_opens_rooms_off_the_path(client):
     s=onboard(client,experience='never',goal='ai_apps',hours='2')
-    assert s['path_worlds']==[1,3] and s['open_worlds']==[1]
-    assert s['profile']['est_weeks']==math.ceil((8*2+2*5.5)/2)
-    st=game.read();st['bosses']=['1'];game.save(st)
+    assert s['path_worlds']==[0,1,3] and s['open_worlds']==[0]
+    assert s['profile']['est_weeks']==math.ceil((12*2+2*5.5)/2)
+    st=game.read();st['bosses']=['1'];st['completed']=['0.1','0.2','0.3','0.4'];game.save(st)
     s=client.get('/api/state').json()
-    assert s['open_worlds']==[1,2,3] and s['current_world']==3
+    assert s['open_worlds']==[0,1,2,3] and s['current_world']==3
     learn(client,'3.1')
     assert client.post('/api/quiz/start',json={'kind':'level','target':'3.1'}).status_code==200
 
@@ -185,7 +202,7 @@ def test_retaking_onboarding_keeps_progress(client):
 def test_beginners_lose_less_health(client):
     assert client.get('/api/state').json()['penalty']==10
     onboard(client,experience='never')
-    s=trial(client,wrong=(0,));assert s['penalty']==5 and s['hp']==95
+    s=trial(client,target='0.1',wrong=(0,));assert s['penalty']==5 and s['hp']==95
     onboard(client,right=3)
     s=trial(client,target='1.4',wrong=(0,));assert s['hp']==85
 
@@ -201,3 +218,20 @@ def test_challenge_skips_quiz_without_bonus(client,monkeypatch):
     assert r['passed'] and r['reward']==100
     # With 1.1-1.3 placed out and 1.4 built by challenge, the checkpoint opens.
     assert client.post('/api/quiz/start',json={'kind':'gate','target':'1'}).status_code==200
+
+SOLUTIONS={
+ '0.1':'def greet(name):\n    name=name.strip()\n    return f"Hello, {name or \'friend\'}!"\n',
+ '0.2':'def split_bill(total,people,tip_percent):\n    if people<1: raise ValueError("people")\n    return round(total*(1+tip_percent/100)/people,2)\n',
+ '0.3':'def grade(score):\n    if score<0 or score>100: raise ValueError("score")\n    return "A" if score>=90 else "B" if score>=75 else "C" if score>=50 else "F"\n',
+ '0.4':'def running_total(numbers):\n    total,out=0,[]\n    for n in numbers:\n        total+=n;out.append(total)\n    return out\n',
+}
+
+@pytest.mark.parametrize("id",sorted(SOLUTIONS))
+def test_boot_camp_verification(client,id):
+    s=game.read();s['completed']=[f'0.{n}' for n in range(1,int(id[2]))];s['challenges']=[id];game.save(s)
+    path=Path(client.post('/api/initialize',json={'id':id}).json()['path'])
+    starter=client.post('/api/verify',json={'id':id}).json()
+    assert not starter['passed'], 'The starter file must fail its tests'
+    path.write_text(SOLUTIONS[id])
+    r=client.post('/api/verify',json={'id':id}).json()
+    assert r['passed'],r['output']

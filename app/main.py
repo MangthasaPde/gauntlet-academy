@@ -79,6 +79,8 @@ def cleared(id,s):
     return id in s['completed'] or id in skipped(s)
 
 def boss_done(w,s):
+    # Boot Camp (world 0) has no project; finishing its four missions completes it.
+    if w==0: return all(cleared(f'0.{n}',s) for n in range(1,5))
     return str(w) in s['bosses'] or f'{w}.boss' in skipped(s)
 
 def penalty(s):
@@ -124,7 +126,7 @@ def view(s):
     worlds=path_worlds(s)
     result['path_worlds']=worlds
     result['current_world']=next((w for w in worlds if not boss_done(w,s)),worlds[-1])
-    result['open_worlds']=[w for w in range(1,5) if world_open(w,s)]
+    result['open_worlds']=[w for w in range(5) if world_open(w,s)]
     result['session']=session_view(s)
     result['penalty']=penalty(s)
     result['workspace']=str(WORK)
@@ -333,6 +335,7 @@ def verify(body:Quest):
                 w=str(item['world']);s['bosses'].append(w);s['boss_hp'][w]=0
                 s['badges'].append(['Scribe Slayer','Nexus Guardian','Hydra Tamer','The Architect'][item['world']-1])
             elif body.id=='1.1': s['badges'].append('First Signal')
+            elif body.id.startswith('0.') and boss_done(0,s): s['badges'].append('Boot Camp Graduate')
         elif not passed: s['hp']=max(0,s['hp']-penalty(s))
         active(s);save(s)
         return dict(passed=passed,output=output,reward=reward,state=view(s))
@@ -349,14 +352,16 @@ def placement_tier(experience,choices):
 
 def build_plan(answers,choices):
     tier=placement_tier(answers['experience'],choices)
-    worlds=PATHS['goals'][answers['goal']]
+    # New and early coders who place as beginners start in Boot Camp.
+    bootcamp=answers['experience'] in ('never','little') and tier=='beginner'
+    worlds=[0]*bootcamp+PATHS['goals'][answers['goal']]
     rank=TIERS.index(tier)
     skip=[id for id,t in PATHS['levels'].items() if int(id.split('.')[0]) in worlds and TIERS.index(t)<rank]
     # A fully placed-out room skips its project too, except the last room: every path ends with a project.
-    skip+=[f'{w}.boss' for w in worlds[:-1] if all(f'{w}.{n}' in skip for n in range(1,5))]
+    skip+=[f'{w}.boss' for w in worlds[:-1] if w and all(f'{w}.{n}' in skip for n in range(1,5))]
     hours=PATHS['hours_per_item']
     missions=sum(1 for id in PATHS['levels'] if int(id.split('.')[0]) in worlds and id not in skip)
-    projects=sum(1 for w in worlds if f'{w}.boss' not in skip)
+    projects=sum(1 for w in worlds if w and f'{w}.boss' not in skip)
     total=missions*hours['mission']+projects*(hours['checkpoint']+hours['project'])
     return dict(answers,tier=tier,placement_score=sum(c==q['answer'] for q,c in zip(PATHS['placement'],choices)),
                 worlds=worlds,skipped=skip,est_hours=total,est_weeks=math.ceil(total/int(answers['hours'])))

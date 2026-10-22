@@ -1,7 +1,7 @@
 'use strict';
 // One screen at a time, driven by the URL hash:
 //   #/                      map: four isometric rooms
-//   #/room/1                one room: its missions, checkpoint and project
+//   #/room/1                one room: its missions, checkpoint and project (#/room/0 is Boot Camp)
 //   #/mission/1.1/learn     lesson pages   (also /quiz and /build)
 //   #/boss/1                boss project
 //   #/gate/1                checkpoint quiz intro
@@ -23,6 +23,13 @@ const WORLD_BLURBS = [
   'Split documents, compare embeddings, search a vector database and ground answers in evidence.',
   'Give AI tools, run a bounded agent loop, build a small UI and package it with Docker.',
 ];
+
+// Boot Camp is world 0: four starter missions that sit before the map, with no checkpoint or project.
+const BOOT_CAMP = {name: 'Boot Camp', topic: 'First steps', blurb: 'Never coded before? Start here: run Python, work with text and numbers, make decisions and repeat things.'};
+const worldName = w => w ? curriculum.worlds[w - 1] : BOOT_CAMP.name;
+const worldTopic = w => w ? WORLD_TOPICS[w - 1] : BOOT_CAMP.topic;
+const roomLabel = w => w ? `Room ${w}` : 'Boot Camp';
+const roomAccent = w => w ? Iso.accent(w) : 'var(--accent)';
 
 let state, curriculum, verifyResults = {}, quizFeedback = null, timer = null;
 let setup = null, onboard = null;   // onboarding questions (fetched once) and the answers in progress
@@ -89,7 +96,7 @@ function roomNext(w) {
     const n = missionNext(l);
     if (n) return {title: l.title, eyebrow: `Mission ${l.id}`, label: n.label, href: `#/mission/${l.id}/${n.step}`};
   }
-  if (bossCleared(w)) return null;
+  if (w === 0 || bossCleared(w)) return null;
   const boss = item(w + '.boss');
   if (!state.keys.includes(String(w))) return {title: 'Checkpoint quiz', eyebrow: `Room ${w}`, label: '10 questions · score 8 or more to unlock the project', href: `#/gate/${w}`};
   return {title: boss.title, eyebrow: `Room ${w} project`, label: 'Build the room project', href: `#/boss/${w}`};
@@ -183,7 +190,8 @@ function roomTile(w) {
   const status = !open ? 'locked' : p.cleared ? 'cleared' : w === state.current_world ? 'current' : 'open';
   const name = curriculum.worlds[w - 1];
   const bonus = onPath(w) ? '' : 'Bonus · ';
-  const note = bonus + (!open ? 'Beat the project before it to open' : p.cleared ? 'Cleared' : `${p.done} of 6 complete`);
+  const blocker = w === 1 && onPath(0) ? 'Finish Boot Camp to open' : 'Beat the project before it to open';
+  const note = bonus + (!open ? blocker : p.cleared ? 'Cleared' : `${p.done} of 6 complete`);
   return `<div class="room ${status}" data-room="${w}" style="--room:${Iso.accent(w)};--z:${[3, 1, 3, 5][w - 1]}">
     <div class="room-art" data-enter="${w}" style="left:${place.left};top:${place.top};width:${place.width};height:${place.height}">${Iso.room(w, open ? p : undefined)}</div>
     <button class="room-label" data-enter="${w}" style="left:${label.left};top:${label.top}"
@@ -211,16 +219,16 @@ function home() {
     <header class="map-head">
       <span class="eyebrow">Gauntlet Academy · <a href="#/path">Your path</a></span>
       <h1>Choose your room</h1>
-      <p>${state.path_worlds.length === 4 ? 'Four rooms, one path.' : `Your path: Room${state.path_worlds.length > 1 ? 's' : ''} ${state.path_worlds.join(' and ')}. The other rooms are bonus.`} Each door opens when you beat the project before it.</p>
+      <p>${pathSentence()} Each door opens when you beat the project before it.</p>
     </header>
-    <div class="wrap">${hpBanner()}${resumeBanner()}</div>
+    <div class="wrap">${hpBanner()}${resumeBanner()}${bootCampCard()}</div>
     <div class="map">
       <div class="stage">
         ${[1, 2, 3].map(w => Iso.bridge(w, worldOpen(w + 1))).join('')}
         ${[1, 2, 3, 4].map(roomTile).join('')}
       </div>
     </div>
-    <aside class="next-dock" style="--room:${Iso.accent(state.current_world)}">
+    <aside class="next-dock" style="--room:${roomAccent(state.current_world)}">
       <div class="next-text">
         <span class="eyebrow">Up next · ${esc(next.eyebrow)}</span>
         <b>${esc(next.title)}</b>
@@ -248,6 +256,24 @@ function home() {
     // Labels and walkways fade back in once the camera has mostly pulled back.
     setTimeout(() => $('.map-page.returning')?.classList.remove('returning'), 550);
   }
+}
+
+function pathSentence() {
+  const rooms = state.path_worlds.filter(w => w);
+  const start = onPath(0) ? 'Boot Camp first, then ' : '';
+  if (rooms.length === 4) return onPath(0) ? 'Boot Camp first, then all four rooms.' : 'Four rooms, one path.';
+  return `${start || 'Your path: '}Room${rooms.length > 1 ? 's' : ''} ${rooms.join(' and ')}. The other rooms are bonus.`;
+}
+
+// Boot Camp sits above the map for the players whose path starts there.
+function bootCampCard() {
+  if (!onPath(0)) return '';
+  const done = levels(0).filter(l => cleared(l.id)).length, next = roomNext(0);
+  return `<section class="banner boot-card ${next ? '' : 'good'}">
+    <div><span class="eyebrow">${next ? 'Start here' : 'Complete'} · ${done} of 4 missions</span>
+      <strong>${BOOT_CAMP.name}</strong> ${next ? 'Four short missions before Room 1. Finishing them opens the first room.' : 'You finished Boot Camp. Room 1 is open.'}</div>
+    <button class="btn small ${next ? '' : 'secondary'}" data-go="#/room/0">${next ? (done ? 'Continue' : 'Start') : 'Revisit'}</button>
+  </section>`;
 }
 
 // Scale the stage so `art` fills the viewport, keeping its centre under the screen centre.
@@ -280,6 +306,7 @@ function enterRoom(w) {
 // ---------------------------------------------------------------- room
 
 function room(w) {
+  if (w === 0) return bootCamp();
   if (!worldOpen(w) || !curriculum.worlds[w - 1]) {
     return render(`<div class="wrap narrow"><a class="back" href="#/">← Map</a><div class="card center"><h2>🔒 Room ${w} is locked</h2><p>Beat the project in Room ${w - 1} to open this door.</p></div></div>`);
   }
@@ -300,6 +327,29 @@ function room(w) {
     </section>
     <h2 class="track-title">Your path through this room</h2>
     <ol class="missions track">${levels(w).map(missionRow).join('')}${checkpointRow(w)}</ol>
+    <p class="how">Each mission has three steps: <b>Learn</b> the idea with short pages and practice questions → pass a <b>Quiz</b> of 3 questions → <b>Build</b> real code that the tests check.</p>
+  </div>`);
+  bindCommon();
+}
+
+function bootCamp() {
+  const done = levels(0).filter(l => cleared(l.id)).length, next = roomNext(0);
+  render(`<div class="wrap room-page">
+    <a class="back" href="#/">← Map</a>
+    ${hpBanner()}${resumeBanner()}
+    <section class="room-hero">
+      <div class="hero-art boot-art" aria-hidden="true"><svg viewBox="0 0 200 140"><rect x="10" y="10" width="180" height="120" rx="14" fill="var(--surface-solid)" stroke="var(--border-strong)"/><circle cx="30" cy="28" r="4" fill="var(--bad)"/><circle cx="44" cy="28" r="4" fill="#e8b339"/><circle cx="58" cy="28" r="4" fill="var(--good)"/><text x="28" y="70" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="var(--accent)">&gt;&gt;&gt; print("hi")</text><text x="28" y="96" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="var(--text)">hi</text><rect x="28" y="106" width="10" height="16" fill="var(--accent)" class="boot-cursor"/></svg></div>
+      <div class="hero-text">
+        <span class="eyebrow">${BOOT_CAMP.topic}${onPath(0) ? ' · on your path' : ' · optional'}</span>
+        <h1>${BOOT_CAMP.name}</h1>
+        <p>${esc(BOOT_CAMP.blurb)}</p>
+        <div class="hero-progress"><div class="bar"><i style="width:${done / 4 * 100}%"></i></div><span>${done} of 4</span></div>
+        ${next ? `<button class="btn big" data-go="${next.href}"><span class="btn-stack"><small>${esc(next.eyebrow)}</small>${esc(next.title)}</span><span aria-hidden="true">→</span></button>`
+          : `<div class="banner good"><div><strong>Boot Camp complete.</strong> Room 1 is open.</div><button class="btn small" data-go="#/room/1">On to Room 1</button></div>`}
+      </div>
+    </section>
+    <h2 class="track-title">Four missions</h2>
+    <ol class="missions track">${levels(0).map(missionRow).join('')}</ol>
     <p class="how">Each mission has three steps: <b>Learn</b> the idea with short pages and practice questions → pass a <b>Quiz</b> of 3 questions → <b>Build</b> real code that the tests check.</p>
   </div>`);
   bindCommon();
@@ -357,7 +407,7 @@ function stepper(l, current) {
 }
 
 function missionHeader(l, step) {
-  return `<a class="back" href="#/room/${l.world}">← Room ${l.world}</a>
+  return `<a class="back" href="#/room/${l.world}">← ${roomLabel(l.world)}</a>
     <header class="mission-head"><span class="eyebrow">Mission ${esc(l.id)}</span><h1>${esc(l.title)}</h1></header>
     ${stepper(l, step)}`;
 }
@@ -365,7 +415,7 @@ function missionHeader(l, step) {
 function mission(id, step) {
   const l = item(id);
   if (!l || id.endsWith('boss')) return notFound();
-  if (!l.unlocked) return render(`<div class="wrap narrow"><a class="back" href="#/room/${l.world}">← Room ${l.world}</a><div class="card center"><h2>🔒 Not unlocked yet</h2><p>Finish the previous mission first.</p></div></div>`);
+  if (!l.unlocked) return render(`<div class="wrap narrow"><a class="back" href="#/room/${l.world}">← ${roomLabel(l.world)}</a><div class="card center"><h2>🔒 Not unlocked yet</h2><p>Finish the previous mission first.</p></div></div>`);
   // Send people to the earliest step they can actually use.
   if (step === 'quiz' && !l.lesson_done) step = 'learn';
   if (step === 'build' && !canBuild(id)) step = l.lesson_done ? 'quiz' : 'learn';
@@ -682,6 +732,7 @@ function buildPanel(l, boss) {
 function nextMissionButton(l) {
   const [w, n] = l.id.split('.').map(Number);
   if (n < 4) return `<button class="btn small" data-go="#/mission/${w}.${n + 1}/learn">Next mission →</button>`;
+  if (w === 0) return `<button class="btn small" data-go="#/room/1">On to Room 1 →</button>`;
   return `<button class="btn small" data-go="#/gate/${w}">Checkpoint quiz →</button>`;
 }
 
@@ -824,7 +875,7 @@ function progress() {
     <div class="stats">
       <div class="stat"><b>${state.level}</b><span>level</span><div class="bar"><i style="width:${state.level_xp / 2}%"></i></div><small>${state.level_xp} / 200 XP to next</small></div>
       <div class="stat"><b>${state.xp}</b><span>total XP</span></div>
-      <div class="stat"><b>${missionsDone}<small>/16</small></b><span>missions built</span></div>
+      <div class="stat"><b>${missionsDone}<small>/${curriculum.items.filter(x => !x.id.endsWith('boss')).length}</small></b><span>missions built</span></div>
       <div class="stat"><b>${state.bosses.length}<small>/4</small></b><span>room projects</span></div>
     </div>
     <section class="card">
@@ -876,6 +927,7 @@ function help() {
         <li><b>Build.</b> Create the starter file, write the code in your editor, and run the tests. Failed runs show exactly which checks failed.</li>
       </ol>
       <p>After four missions, a 10-question checkpoint (8 to pass) unlocks the room project. Finishing the project opens the next room.</p>
+      <p>New to coding, or want a refresher? <a href="#/room/0">Boot Camp</a> has four starter missions and is open to everyone.</p>
     </section>
     <section class="card">
       <h2>Where your code lives</h2>
@@ -980,11 +1032,11 @@ function pathPage() {
   const p = state.profile, next = upNext();
   const rooms = p.worlds.map(w => {
     const ids = levels(w).map(l => l.id), out = ids.filter(id => p.skipped.includes(id)).length;
-    const project = p.skipped.includes(w + '.boss') ? 'project placed out' : 'ends with a project';
-    return `<li class="mission ${bossCleared(w) ? 'complete' : ''}" style="--room:${Iso.accent(w)}">
-      <span class="num">${bossCleared(w) ? '✓' : w}</span>
-      <div class="mission-body"><h3>Room ${w}: ${esc(curriculum.worlds[w - 1])}</h3>
-        <p>${esc(WORLD_TOPICS[w - 1])} · ${4 - out} mission${4 - out === 1 ? '' : 's'} to do${out ? `, ${out} placed out` : ''} · ${project}</p></div>
+    const project = !w ? 'opens Room 1' : p.skipped.includes(w + '.boss') ? 'project placed out' : 'ends with a project';
+    return `<li class="mission ${bossCleared(w) ? 'complete' : ''}" style="--room:${roomAccent(w)}">
+      <span class="num">${bossCleared(w) ? '✓' : w || '★'}</span>
+      <div class="mission-body"><h3>${w ? `Room ${w}: ` : ''}${esc(worldName(w))}</h3>
+        <p>${esc(worldTopic(w))} · ${4 - out} mission${4 - out === 1 ? '' : 's'} to do${out ? `, ${out} placed out` : ''} · ${project}</p></div>
     </li>`;
   }).join('');
   render(`<div class="wrap narrow">
@@ -994,13 +1046,13 @@ function pathPage() {
       <p>Starting level: <b>${esc(p.tier)}</b>${p.experience === 'never' ? ', from the very first step' : ` (placement check: ${p.placement_score} of ${setup.placement.length})`}.</p>
     </header>
     <div class="stats">
-      <div class="stat"><b>${p.worlds.length}</b><span>room${p.worlds.length === 1 ? '' : 's'} on your path</span></div>
+      <div class="stat"><b>${p.worlds.filter(w => w).length}</b><span>room${p.worlds.filter(w => w).length === 1 ? '' : 's'} on your path${onPath(0) ? ', after Boot Camp' : ''}</span></div>
       <div class="stat"><b>~${p.est_hours}<small> h</small></b><span>estimated work</span></div>
       <div class="stat"><b>~${p.est_weeks}</b><span>week${p.est_weeks === 1 ? '' : 's'} at ${esc(p.hours)} h a week</span></div>
     </div>
     <ol class="missions track">${rooms}</ol>
     ${p.skipped.length ? '<p class="how">Placed-out missions count as done, so the rooms after them stay open. You can still play any of them for practice. They just don\'t earn XP until you build them.</p>' : ''}
-    ${p.field !== 'ece' ? `<div class="note">Lessons currently use electronics examples. Examples for ${esc(setupLabel('field', p.field).toLowerCase())} are on the way. The skills are the same either way.</div>` : ''}
+    ${p.field !== 'ece' ? `<div class="note">${onPath(0) ? 'Boot Camp uses everyday examples. ' : ''}Rooms 1 to 4 currently use electronics examples. Examples for ${esc(setupLabel('field', p.field).toLowerCase())} are on the way. The skills are the same either way.</div>` : ''}
     <div class="actions">
       <button class="btn" data-go="${next.href}">${state.completed.length ? 'Continue' : 'Start'}: ${esc(next.title)} <span aria-hidden="true">→</span></button>
       <button class="btn ghost" id="redo">Change my answers</button>

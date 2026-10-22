@@ -543,3 +543,9 @@ pre.numbered span::before { content: counter(line); display: inline-block; width
 .map-head .eyebrow a { color: inherit; }
 .fast-lane { flex-wrap: wrap; }
 .fast-lane .actions { margin: 0; }
+.boot-card { margin-top: 4px; }
+.boot-card .eyebrow { margin-bottom: 2px; }
+.boot-art svg { width: 100%; max-width: 420px; height: auto; display: block; margin: auto; filter: drop-shadow(0 20px 30px var(--map-shadow)); }
+.boot-cursor { animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .boot-cursor { animation: none; } }

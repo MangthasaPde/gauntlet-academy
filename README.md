@@ -23,6 +23,7 @@ If you get a permission error, use `bash setup_and_run.sh`. If your default Pyth
 
 On first launch the game asks five questions (field, coding experience, goal, hours per week, how much help you want), then a six-question placement check unless you have never coded. Placement questions cost no health and can be skipped.
 
+- **Boot Camp** (World 0) comes first for players who have never coded, or coded a little and place as beginners: four short missions on running Python, text and numbers, decisions and loops, with everyday examples. Finishing it opens Room 1. It has no checkpoint or project, and it is open to everyone as a refresher (linked from Help).
 - **Goal** picks the rooms on your path: *Learn to code* (Room 1), *Backends and APIs* (Rooms 1–2), *AI on my own data* (Rooms 1 and 3), *AI engineer* (all four). Other rooms stay available as bonus rooms and never block your path.
 - **Placement** sets your starting tier. Missions below it are *placed out*: they count as done for unlocking, stay playable, and earn XP only when you actually build them. A fully placed-out room skips its checkpoint and project, but every path still ends with a project.
 - **Your path** (`#/path`, also linked from Progress) shows the rooms, placed-out missions and a time estimate, and lets you change your answers. Changing answers recomputes placement but never removes progress.
@@ -54,7 +55,7 @@ The home screen shows one **Up next** card; click **Continue**. Every mission ha
 | Vector Vault | Chunking, cosine similarity, Chroma, grounding | Document RAG with exact source quotes |
 | Production Forge | Tool dispatch, bounded agents, browser fetch, Docker | Multi-source agent service with UI and container files |
 
-All **16 levels** have a briefing, code example, three questions, a starter template, function contracts, hints, and executable tests. World 1 lessons are expanded for beginners. Each world has a **10-question Gatekeeper**, available after all four coding quests. Pass at least 8/10 to earn its Boss Key. Timed mode allows five minutes; untimed mode is also available. A previous-world boss defeat unlocks the next world.
+All **16 room levels** and the **4 Boot Camp missions** have a briefing, code example, three questions, a starter template, function contracts, hints, and executable tests. World 1 lessons are expanded for beginners. Each world has a **10-question Gatekeeper**, available after all four coding quests. Pass at least 8/10 to earn its Boss Key. Timed mode allows five minutes; untimed mode is also available. A previous-world boss defeat unlocks the next world.
 
 The four bosses provide starter projects and full test contracts. They are projects **you build**, not pre-solved answers. Tests check behavior, edge cases, fake AI integration, persistence, retrieval, citation validation, and portfolio artifacts. The game is a learning tool, not a tamper-proof examination system: its files and tests are inspectable and editable locally.
 
@@ -126,7 +127,7 @@ Progress lives in `data/save.sqlite3`: XP, HP, trial scores, keys, completed que
 - `content/curriculum.json`: mission contracts and question bank; `bosses.json`: boss contracts.
 - `content/paths.json`: onboarding questions, goals, level tiers and the placement check.
 - `templates/`: immutable starter assets copied on demand.
-- `verification/`: 20 quest/boss test modules and shared helpers.
+- `verification/`: 24 quest/boss test modules (including Boot Camp) and shared helpers.
 - `tests/`: platform regression tests (separate from learner verification).
 - `workspace/`: your code; initially empty.
 - `gauntlet_ai.py`: configurable live Gemini adapters.
