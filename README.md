@@ -5,11 +5,15 @@ A local cyber-RPG for students of any background learning Python, backend engine
 ## Launch on your Mac
 
 1. Install **Python 3.12** (recommended; 3.11+ supported) if you do not already have it. VS Code is optional but recommended as your editor.
-2. In Terminal, change into the `gauntlet-academy` folder and launch it:
+2. In Terminal, download the game and launch it:
 
 ```bash
+git clone https://github.com/MangthasaPde/gauntlet-academy.git
+cd gauntlet-academy
 ./setup_and_run.sh
 ```
+
+No git? On the GitHub page, choose **Code → Download ZIP**, extract it, change into the extracted folder in Terminal, and run `bash setup_and_run.sh`.
 
 Open **http://localhost:8000**. Keep Terminal running; press Ctrl+C to stop. First launch needs internet access and may take several minutes to install Chroma and the other dependencies. Later launches reuse `.venv` and work offline for lessons, quizzes and verification. There are no CDN fonts, CSS libraries or scripts.
 
