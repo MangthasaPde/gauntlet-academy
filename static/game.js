@@ -1028,6 +1028,15 @@ async function finishOnboarding() {
   }
 }
 
+// Says plainly whether the lessons speak the player's field yet.
+function fieldNote(p) {
+  if (p.field === 'ece') return '';
+  const field = esc(setupLabel('field', p.field).toLowerCase());
+  const bootCamp = onPath(0) ? 'Boot Camp uses everyday examples. ' : '';
+  if (state.field_examples) return `<div class="note">${bootCamp}Rooms 1 to 4 use examples from ${field}. The room projects still use electronics sample files, so expect a few unfamiliar terms there.</div>`;
+  return `<div class="note">${bootCamp}Rooms 1 to 4 currently use electronics examples. Examples for ${field} are on the way. The skills are the same either way.</div>`;
+}
+
 function pathPage() {
   const p = state.profile, next = upNext();
   const rooms = p.worlds.map(w => {
@@ -1052,7 +1061,7 @@ function pathPage() {
     </div>
     <ol class="missions track">${rooms}</ol>
     ${p.skipped.length ? '<p class="how">Placed-out missions count as done, so the rooms after them stay open. You can still play any of them for practice. They just don\'t earn XP until you build them.</p>' : ''}
-    ${p.field !== 'ece' ? `<div class="note">${onPath(0) ? 'Boot Camp uses everyday examples. ' : ''}Rooms 1 to 4 currently use electronics examples. Examples for ${esc(setupLabel('field', p.field).toLowerCase())} are on the way. The skills are the same either way.</div>` : ''}
+    ${fieldNote(p)}
     <div class="actions">
       <button class="btn" data-go="${next.href}">${state.completed.length ? 'Continue' : 'Start'}: ${esc(next.title)} <span aria-hidden="true">→</span></button>
       <button class="btn ghost" id="redo">Change my answers</button>

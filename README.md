@@ -34,7 +34,24 @@ On first launch the game asks five questions (field, coding experience, goal, ho
 - **Hints:** *Guide me* shows the first hint automatically; *Hints when I ask* works as before; *No hand-holding* folds hints behind a "Stuck?" button.
 - **Fast lane:** anyone past beginner, or who chose *No hand-holding*, can skip a lesson straight to its quiz, or take **challenge mode** and go straight to Build. A challenge pass earns 100 XP instead of 150 because it skips the quiz bonus.
 
-Level tiers, goals, onboarding questions and placement questions live in `content/paths.json`. Field-specific examples are recorded in the profile but not yet used by lessons.
+### Examples from your field
+
+The setup asks for your field. **Biology / life sciences** and **Business / finance** players get Rooms 1 to 4 in their own words: mission titles, lesson pages, quiz and checkpoint questions, and analogies. Where the original mission is tied to electronics, they get a different task with its own function names, starter file and tests, so nobody writes voltage code for a shop:
+
+| Mission | Electronics | Biology | Business |
+|---|---|---|---|
+| 1.1 | `format_telemetry` | `format_sample` | `format_invoice` |
+| 1.2 | `filter_signal` | `filter_measurements` | `filter_prices` |
+| 1.3 | `restructure_payload` | `restructure_results` | `restructure_order` |
+| 2.1 | `GET /sensor/{id}` | `GET /sample/{id}` | `GET /product/{id}` |
+| 2.2 | `POST /samples` (voltage) | `POST /samples` (pH) | `POST /reviews` (rating) |
+| 2.3 | `store_reading` | `store_measurement` | `store_sale` |
+| 2.4 | `fetch_voltage` | `fetch_reading` | `fetch_exchange_rate` |
+| 4.1 | `dispatch` (ADC, PWM) | `dispatch` (DNA, ATP) | `dispatch` (ROI, KPI) |
+
+Variant starter files are saved as `level_1_1_biology.py` and so on, so changing your field later never overwrites your work, and your progress carries over. Boot Camp uses everyday examples for everyone. **The four room projects still use electronics sample files**, so expect a few unfamiliar terms there. Players from other fields keep the electronics examples until their field is added.
+
+Level tiers, goals, onboarding questions and placement questions live in `content/paths.json`.
 
 ## Play your first mission
 
@@ -126,8 +143,9 @@ Progress lives in `data/save.sqlite3`: XP, HP, trial scores, keys, completed que
 - `content/lessons.json`: paged lessons and practice questions for each level.
 - `content/curriculum.json`: mission contracts and question bank; `bosses.json`: boss contracts.
 - `content/paths.json`: onboarding questions, goals, level tiers and the placement check.
+- `content/fields/<field>.json`: a field's rewritten wording. It patches the original by position (pages, quiz questions, checkpoint questions) and marks missions that have their own contract (`variant`), whose starter is `templates/<world>/level_<n>_<field>.py` and tests are `verification/test_<n>_<field>.py`.
 - `templates/`: immutable starter assets copied on demand.
-- `verification/`: 24 quest/boss test modules (including Boot Camp) and shared helpers.
+- `verification/`: quest/boss test modules (including Boot Camp and each field's variant missions) and shared helpers.
 - `tests/`: platform regression tests (separate from learner verification).
 - `workspace/`: your code; initially empty.
 - `gauntlet_ai.py`: configurable live Gemini adapters.
@@ -137,6 +155,7 @@ Progress lives in `data/save.sqlite3`: XP, HP, trial scores, keys, completed que
 ```bash
 source .venv/bin/activate
 python -m pytest -q                         # platform tests, no learner work required
+GAUNTLET_SOLUTIONS=/path/to/solutions python -m pytest -q   # also run reference solutions (<id>.py, <id>_<field>.py), which are not shipped
 python -m pytest verification/test_1_1.py -q # a single initialized learner quest
 ```
 

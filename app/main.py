@@ -30,6 +30,9 @@ BOSSES=json.loads((ROOT/'content/bosses.json').read_text())
 LESSONS=json.loads((ROOT/'content/lessons.json').read_text())
 PATHS=json.loads((ROOT/'content/paths.json').read_text())
 TIERS=PATHS['tiers']
+# Field overlays: wording (and, where the original ties the code to electronics, a whole
+# alternative contract) for players from a given field. See content/fields/*.json.
+FIELDS={f.stem:json.loads(f.read_text()) for f in sorted((ROOT/'content/fields').glob('*.json'))}
 ITEMS={x['id']:x for x in CUR['levels']+BOSSES}
 LOCK=threading.RLock()
 BUSY=False
@@ -129,6 +132,7 @@ def view(s):
     result['open_worlds']=[w for w in range(5) if world_open(w,s)]
     result['session']=session_view(s)
     result['penalty']=penalty(s)
+    result['field_examples']=bool(s['profile']) and s['profile']['field'] in FIELDS
     result['workspace']=str(WORK)
     return result
 
@@ -139,6 +143,38 @@ def item_or_404(id):
     if id not in ITEMS: raise HTTPException(404,'Unknown quest')
     return ITEMS[id]
 
+def patched(base,patch):
+    # `patch` maps list positions (as strings) to replacements; everything else is kept.
+    out=list(base)
+    for i,v in (patch or {}).items(): out[int(i)]=v
+    return out
+
+def field_overlay(s):
+    return FIELDS.get(s['profile']['field'],{}) if s['profile'] else {}
+
+def field_level(id,s):
+    return field_overlay(s).get('levels',{}).get(id)
+
+def localized(item,s):
+    """The mission as this player sees it: field wording, and for variant missions the field's own contract."""
+    ov=field_level(item['id'],s)
+    if not ov: return item
+    out={**item,**{k:ov[k] for k in ('title','quest','hints') if k in ov}}
+    if ov.get('variant'): out['path']=item['path'].replace('.py',f"_{s['profile']['field']}.py")
+    if 'quiz' in item: out['quiz']=patched(item['quiz'],ov.get('quiz'))
+    return out
+
+def lesson_view(id,s):
+    base=LESSONS.get(id,{});ov=field_level(id,s) or {}
+    return dict(summary=ov.get('summary',base.get('summary','')),pages=patched(base.get('pages',[]),ov.get('pages')))
+
+def test_key(id,s):
+    ov=field_level(id,s)
+    return f"{id}_{s['profile']['field']}" if ov and ov.get('variant') else id
+
+def gate_questions(w,s):
+    return patched(CUR['gatekeepers'][w],field_overlay(s).get('gatekeepers',{}).get(w))
+
 @app.get('/api/state')
 def state():
     with LOCK: return view(read())
@@ -148,10 +184,12 @@ def curriculum():
     with LOCK:
         s=read(); items=[]
         for item in ITEMS.values():
+            item=localized(item,s)
             out={k:v for k,v in item.items() if k!='quiz'}
             out['unlocked']=unlocked(item['id'],s)
-            out['lesson_pages']=LESSONS.get(item['id'],{}).get('pages',[])
-            out['summary']=LESSONS.get(item['id'],{}).get('summary','')
+            lesson=lesson_view(item['id'],s)
+            out['lesson_pages']=lesson['pages']
+            out['summary']=lesson['summary']
             out['lesson_done']=lesson_done(item['id'],s)
             items.append(out)
         return dict(worlds=CUR['worlds'],items=items)
@@ -166,16 +204,16 @@ def start(body:Start):
     with LOCK:
         s=read();alive(s)
         if body.kind=='level':
-            item=item_or_404(body.target)
+            item=localized(item_or_404(body.target),s)
             if 'quiz' not in item or not unlocked(body.target,s): raise HTTPException(403,'Finish the previous quest first')
             if not lesson_done(body.target,s): raise HTTPException(403,'Finish the lesson before taking its quiz')
             questions=[dict(q,review_id=body.target+':'+str(i)) for i,q in enumerate(item['quiz'])]
         elif body.kind=='gate':
             if body.target not in ('1','2','3','4'): raise HTTPException(404,'Unknown world')
             if not all(cleared(f'{body.target}.{i}',s) for i in range(1,5)): raise HTTPException(403,'Complete all four coding quests first')
-            questions=[dict(q) for q in CUR['gatekeepers'][body.target]]
+            questions=[dict(q) for q in gate_questions(body.target,s)]
         elif body.kind=='daily':
-            pool=[dict(q,review_id=item['id']+':'+str(i)) for item in CUR['levels'] if item['id'] in s['completed'] for i,q in enumerate(item['quiz'])]
+            pool=[dict(q,review_id=item['id']+':'+str(i)) for item in map(lambda x:localized(x,s),CUR['levels']) if item['id'] in s['completed'] for i,q in enumerate(item['quiz'])]
             if not pool: raise HTTPException(403,'Complete your first coding quest to open Training Grounds')
             # Weighted random review favors weak/overdue cards; with one completed level, repeats fill five slots.
             now=time.time()
@@ -273,7 +311,7 @@ class Quest(BaseModel):
 def initialize(body:Quest):
     item=item_or_404(body.id)
     with LOCK:
-        s=read()
+        s=read();item=localized(item,s)
         if not unlocked(body.id,s) or not build_open(body.id,s): raise HTTPException(403,'Pass the knowledge trial or earn the Boss Key first')
         relative=Path(item['path']); dest=WORK/relative
         if not dest.resolve().is_relative_to(WORK): raise HTTPException(400,'Workspace path escapes project')
@@ -315,14 +353,14 @@ def verify(body:Quest):
     global BUSY
     item=item_or_404(body.id)
     with LOCK:
-        s=read();alive(s)
+        s=read();alive(s);item=localized(item,s);key=test_key(body.id,s)
         if not unlocked(body.id,s) or not build_open(body.id,s): raise HTTPException(403,'Quest is locked')
         target=WORK/item['path']
         if not target.exists(): raise HTTPException(409,'Initialize Quest Files first')
         if not target.resolve().is_relative_to(WORK): raise HTTPException(400,'Quest path escapes workspace')
         if BUSY: raise HTTPException(409,'A verification run is already active')
         BUSY=True
-    try: passed,output=run_verification(body.id)
+    try: passed,output=run_verification(key)
     finally:
         with LOCK: BUSY=False
     with LOCK:

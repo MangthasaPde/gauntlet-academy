@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
@@ -113,10 +114,10 @@ def test_content_complete():
         assert (game.ROOT/'templates'/item['path']).is_file()
         assert (game.ROOT/'verification'/('test_'+id.replace('.','_')+'.py')).is_file()
 
-def onboard(client,experience='comfortable',goal='ai_engineer',right=0,hours='5'):
+def onboard(client,experience='comfortable',goal='ai_engineer',right=0,hours='5',field='science'):
     # Answer the first `right` placement questions correctly and skip the rest.
     placement=[q['answer'] if i<right else None for i,q in enumerate(game.PATHS['placement'])]
-    r=client.post('/api/onboarding',json=dict(field='science',experience=experience,goal=goal,hours=hours,support='hints',placement=placement))
+    r=client.post('/api/onboarding',json=dict(field=field,experience=experience,goal=goal,hours=hours,support='hints',placement=placement))
     assert r.status_code==200,r.text
     return r.json()
 
@@ -219,19 +220,100 @@ def test_challenge_skips_quiz_without_bonus(client,monkeypatch):
     # With 1.1-1.3 placed out and 1.4 built by challenge, the checkpoint opens.
     assert client.post('/api/quiz/start',json={'kind':'gate','target':'1'}).status_code==200
 
-SOLUTIONS={
- '0.1':'def greet(name):\n    name=name.strip()\n    return f"Hello, {name or \'friend\'}!"\n',
- '0.2':'def split_bill(total,people,tip_percent):\n    if people<1: raise ValueError("people")\n    return round(total*(1+tip_percent/100)/people,2)\n',
- '0.3':'def grade(score):\n    if score<0 or score>100: raise ValueError("score")\n    return "A" if score>=90 else "B" if score>=75 else "C" if score>=50 else "F"\n',
- '0.4':'def running_total(numbers):\n    total,out=0,[]\n    for n in numbers:\n        total+=n;out.append(total)\n    return out\n',
-}
+# ---------------------------------------------------------------- field examples
 
-@pytest.mark.parametrize("id",sorted(SOLUTIONS))
-def test_boot_camp_verification(client,id):
-    s=game.read();s['completed']=[f'0.{n}' for n in range(1,int(id[2]))];s['challenges']=[id];game.save(s)
+def own_starters():
+    """Missions with a starter file of their own: Boot Camp, plus every variant mission of every field."""
+    cases=[(f'0.{n}',None) for n in range(1,5)]
+    for field,overlay in sorted(game.FIELDS.items()):
+        cases+=[(id,field) for id,level in sorted(overlay['levels'].items()) if level.get('variant')]
+    return cases
+
+def play_to(client,id,field):
+    """Put a player from `field` in front of mission `id`, skipping its lesson and quiz."""
+    if field: onboard(client,field=field)
+    s=game.read();world=int(id[0])
+    s['challenges']=[id];s['completed']=[f'{world}.{n}' for n in range(1,int(id[2]))]
+    s['bosses']=[str(w) for w in range(1,world)]
+    game.save(s)
+
+def mission(client,id):
+    return next(x for x in client.get('/api/curriculum').json()['items'] if x['id']==id)
+
+@pytest.mark.parametrize("id,field",own_starters())
+def test_own_starters_fail_their_own_tests(client,id,field):
+    play_to(client,id,field)
     path=Path(client.post('/api/initialize',json={'id':id}).json()['path'])
-    starter=client.post('/api/verify',json={'id':id}).json()
-    assert not starter['passed'], 'The starter file must fail its tests'
-    path.write_text(SOLUTIONS[id])
-    r=client.post('/api/verify',json={'id':id}).json()
-    assert r['passed'],r['output']
+    result=client.post('/api/verify',json={'id':id}).json()
+    suffix=f'_{field}' if field else ''
+    assert path.name==f"level_{id.replace('.','_')}{suffix}.py"
+    assert not result['passed'], 'The starter file must fail its tests'
+    assert f"test_{id.replace('.','_')}{suffix}.py" in result['output'], 'The tests for this field must be the ones that ran'
+
+# Reference solutions are not shipped. Point GAUNTLET_SOLUTIONS at a folder of <id>.py / <id>_<field>.py files to run them.
+SOLUTIONS=os.environ.get('GAUNTLET_SOLUTIONS')
+
+@pytest.mark.skipif(not SOLUTIONS,reason='set GAUNTLET_SOLUTIONS to a folder of reference solutions')
+@pytest.mark.parametrize("id,field",own_starters())
+def test_reference_solutions_pass(client,id,field):
+    play_to(client,id,field)
+    path=Path(client.post('/api/initialize',json={'id':id}).json()['path'])
+    path.write_text((Path(SOLUTIONS)/(f'{id}_{field}.py' if field else f'{id}.py')).read_text())
+    result=client.post('/api/verify',json={'id':id}).json()
+    assert result['passed'],result['output']
+
+def test_field_overlays_are_valid():
+    assert {'biology','business'}<=set(game.FIELDS)
+    options={o['value'] for q in game.PATHS['questions'] if q['id']=='field' for o in q['options']}
+    for field,overlay in game.FIELDS.items():
+        assert field in options
+        for id,level in overlay['levels'].items():
+            base=game.ITEMS[id];pages=game.LESSONS[id]['pages']
+            for i,p in level.get('pages',{}).items():
+                assert int(i)<len(pages) and (p.get('type')=='check')==(pages[int(i)].get('type')=='check'),(id,i)
+                if p.get('type')=='check': assert 0<=p['answer']<len(p['options']) and p['explain']
+                else: assert p['title'] and p['body']
+            for i,q in level.get('quiz',{}).items():
+                assert q['kind']==base['quiz'][int(i)]['kind'] and len(q['options'])==4 and 0<=q['answer']<4,(id,i)
+                if int(i)==0: assert len(q['code'].splitlines())==4,(id,i)
+            if level.get('variant'):
+                rel=Path(base['path']);variant=rel.with_name(rel.stem+f'_{field}.py')
+                template=game.ROOT/'templates'/variant
+                assert template.is_file() and (game.ROOT/'verification'/f"test_{id.replace('.','_')}_{field}.py").is_file()
+                mission_page=json.dumps(level['pages'][str(len(pages)-1)])
+                for token in level['contract']: assert token in level['quest'] and token in mission_page,(id,token)
+                import re
+                for name in re.findall(r'^(?:async )?def (\w+)',template.read_text(),re.M): assert name in level['quest'],(id,name)
+        for world,items in overlay.get('gatekeepers',{}).items():
+            for i,q in items.items():
+                assert q['kind']==game.CUR['gatekeepers'][world][int(i)]['kind'] and len(q['options'])==4 and 0<=q['answer']<4
+
+def test_players_see_their_own_field(client):
+    assert 'format_telemetry' in mission(client,'1.1')['quest'] and not client.get('/api/state').json()['field_examples']
+    s=onboard(client,field='biology');assert s['field_examples']
+    m=mission(client,'1.1')
+    assert 'format_sample' in m['quest'] and m['title']=='Lab Notebook: Sample Labels' and m['path'].endswith('level_1_1_biology.py')
+    assert 'concentration' in m['lesson_pages'][0]['code'] and 'mg/L' in m['lesson_pages'][6]['code']
+    assert 'format_invoice' in (onboard(client,field='business'),mission(client,'1.1'))[1]['quest']
+    # A field without examples of its own, and electronics, keep the original missions.
+    for field in ('design','ece'):
+        s=onboard(client,field=field);assert not s['field_examples']
+        assert 'format_telemetry' in mission(client,'1.1')['quest'] and mission(client,'1.1')['path'].endswith('level_1_1.py')
+
+def test_field_quiz_and_checkpoint_questions(client):
+    onboard(client,field='biology');learn(client,'1.1')
+    t=client.post('/api/quiz/start',json={'kind':'level','target':'1.1'}).json()
+    assert 'mg/L' in t['question']['code'] or 'conc' in t['question']['code']
+    s=game.read();s['completed']=[f'1.{n}' for n in range(1,5)];game.save(s)
+    client.post('/api/quiz/start',json={'kind':'gate','target':'1'})
+    questions=game.read()['session']['questions']
+    assert 'mg/L' in questions[0]['code'] and 'volts' not in json.dumps(questions)
+    onboard(client,field='ece');client.post('/api/quiz/start',json={'kind':'gate','target':'1'})
+    assert 'volts' in game.read()['session']['questions'][0]['code']
+
+def test_switching_field_keeps_progress(client,monkeypatch):
+    play_to(client,'1.1','biology');client.post('/api/initialize',json={'id':'1.1'})
+    monkeypatch.setattr(game,'run_verification',lambda id:(True,'ok'))
+    assert client.post('/api/verify',json={'id':'1.1'}).json()['passed']
+    s=onboard(client,field='business')
+    assert '1.1' in s['completed'] and mission(client,'1.1')['path'].endswith('level_1_1_business.py')

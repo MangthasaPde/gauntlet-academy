@@ -4,7 +4,8 @@
       {"value": "ece", "label": "Electronics / ECE"},
       {"value": "cs", "label": "Computer science / IT"},
       {"value": "engineering", "label": "Other engineering"},
-      {"value": "science", "label": "Science (biology, chemistry, physics)"},
+      {"value": "biology", "label": "Biology / life sciences"},
+      {"value": "science", "label": "Chemistry, physics or other science"},
       {"value": "business", "label": "Business / finance"},
       {"value": "design", "label": "Design / arts"},
       {"value": "other", "label": "Something else"}
