@@ -1,23 +1,29 @@
-# ECE-to-AI: The Gauntlet
+# Gauntlet Academy
 
-A local cyber-RPG for an ECE graduate learning Python, backend engineering and AI engineering. Your browser is the quest console; your editor is the workbench. You write real Python, and pytest verifies it.
+A local cyber-RPG for students of any background learning Python, backend engineering and AI engineering. It grew out of *ECE-to-AI: The Gauntlet* and adds a first-run setup that builds a personal path. Your browser is the quest console; your editor is the workbench. You write real Python, and pytest verifies it.
 
 ## Launch on your Mac
 
 1. Install **Python 3.12** (recommended; 3.11+ supported) if you do not already have it. VS Code is optional but recommended as your editor.
-2. In Terminal, download the game and launch it:
+2. In Terminal, change into the `gauntlet-academy` folder and launch it:
 
 ```bash
-git clone https://github.com/MangthasaPde/ECE-to-AI.git
-cd ECE-to-AI
 ./setup_and_run.sh
 ```
 
-No git? On the GitHub page, choose **Code → Download ZIP**, extract it, change into the extracted folder in Terminal, and run `bash setup_and_run.sh`.
-
 Open **http://localhost:8000**. Keep Terminal running; press Ctrl+C to stop. First launch needs internet access and may take several minutes to install Chroma and the other dependencies. Later launches reuse `.venv` and work offline for lessons, quizzes and verification. There are no CDN fonts, CSS libraries or scripts.
 
-If you get a permission error, use `bash setup_and_run.sh`. If your default Python is too old, use `GAUNTLET_PYTHON=python3.12 ./setup_and_run.sh` after installing Python 3.12. If port 8000 is occupied, stop the other service before relaunching. Do not move the project with an existing virtual environment; recreate `.venv` after moving it.
+If you get a permission error, use `bash setup_and_run.sh`. If your default Python is too old, use `GAUNTLET_PYTHON=python3.12 ./setup_and_run.sh` after installing Python 3.12. If port 8000 is occupied (for example by The Gauntlet itself), run on another port: `GAUNTLET_PORT=8100 ./setup_and_run.sh`, then open http://localhost:8100. Do not move the project with an existing virtual environment; recreate `.venv` after moving it.
+
+## Your path
+
+On first launch the game asks five questions (field, coding experience, goal, hours per week, how much help you want), then a six-question placement check unless you have never coded. Placement questions cost no health and can be skipped.
+
+- **Goal** picks the rooms on your path: *Learn to code* (Room 1), *Backends and APIs* (Rooms 1–2), *AI on my own data* (Rooms 1 and 3), *AI engineer* (all four). Other rooms stay available as bonus rooms and never block your path.
+- **Placement** sets your starting tier. Missions below it are *placed out*: they count as done for unlocking, stay playable, and earn XP only when you actually build them. A fully placed-out room skips its checkpoint and project, but every path still ends with a project.
+- **Your path** (`#/path`, also linked from Progress) shows the rooms, placed-out missions and a time estimate, and lets you change your answers. Changing answers recomputes placement but never removes progress.
+
+Level tiers, goals, onboarding questions and placement questions live in `content/paths.json`. Field-specific examples and help-level settings are recorded in the profile but not yet used by lessons.
 
 ## Play your first mission
 
@@ -108,6 +114,7 @@ Progress lives in `data/save.sqlite3`: XP, HP, trial scores, keys, completed que
 - `static/`: responsive HTML, local CSS and vanilla JavaScript.
 - `content/lessons.json`: paged lessons and practice questions for each level.
 - `content/curriculum.json`: mission contracts and question bank; `bosses.json`: boss contracts.
+- `content/paths.json`: onboarding questions, goals, level tiers and the placement check.
 - `templates/`: immutable starter assets copied on demand.
 - `verification/`: 20 quest/boss test modules and shared helpers.
 - `tests/`: platform regression tests (separate from learner verification).

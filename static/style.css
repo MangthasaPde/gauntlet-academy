@@ -534,3 +534,10 @@ pre.numbered span::before { content: counter(line); display: inline-block; width
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Onboarding and placed-out missions */
+.option.selected { border-color: var(--accent); background: var(--accent-soft); }
+.option.selected b { background: var(--accent); color: var(--on-accent); }
+.option span small { display: block; margin-top: 2px; color: var(--muted); font-size: .86rem; }
+.mission.placed .num { border-style: dashed; color: var(--accent); }
+.map-head .eyebrow a { color: inherit; }

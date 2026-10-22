@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
@@ -110,3 +111,73 @@ def test_content_complete():
     for id,item in game.ITEMS.items():
         assert (game.ROOT/'templates'/item['path']).is_file()
         assert (game.ROOT/'verification'/('test_'+id.replace('.','_')+'.py')).is_file()
+
+def onboard(client,experience='comfortable',goal='ai_engineer',right=0,hours='5'):
+    # Answer the first `right` placement questions correctly and skip the rest.
+    placement=[q['answer'] if i<right else None for i,q in enumerate(game.PATHS['placement'])]
+    r=client.post('/api/onboarding',json=dict(field='science',experience=experience,goal=goal,hours=hours,support='hints',placement=placement))
+    assert r.status_code==200,r.text
+    return r.json()
+
+def test_onboarding_questions_hide_answers(client):
+    data=client.get('/api/onboarding').json()
+    assert [q['id'] for q in data['questions']]==['field','experience','goal','hours','support']
+    assert data['placement'] and all('answer' not in q for q in data['placement'])
+    assert client.get('/api/state').json()['profile'] is None
+
+def test_onboarding_validates_answers(client):
+    bad=dict(field='science',experience='comfortable',goal='world_domination',hours='5',support='hints',placement=[None]*6)
+    assert client.post('/api/onboarding',json=bad).status_code==422
+    short=dict(bad,goal='code',placement=[0])
+    assert client.post('/api/onboarding',json=short).status_code==422
+    assert client.post('/api/onboarding',json=dict(short,experience='never',placement=[])).status_code==200
+
+def test_placement_tiers():
+    tier=lambda right,exp='little':game.placement_tier(exp,[q['answer'] if i<right else None for i,q in enumerate(game.PATHS['placement'])])
+    assert tier(6,'never')=='beginner'
+    assert tier(0)=='beginner' and tier(2)=='beginner'
+    assert tier(3)=='intermediate' and tier(4)=='intermediate'
+    assert tier(5)=='advanced' and tier(6)=='advanced'
+
+def test_beginner_full_path_matches_original_rules(client):
+    s=onboard(client,experience='never')
+    assert s['profile']['tier']=='beginner' and s['profile']['skipped']==[]
+    assert s['open_worlds']==[1] and s['current_world']==1
+    assert client.post('/api/quiz/start',json={'kind':'gate','target':'1'}).status_code==403
+
+def test_intermediate_places_out_of_basics(client):
+    s=onboard(client,right=3)
+    assert s['profile']['skipped']==['1.1','1.2','1.3']
+    items={x['id']:x for x in client.get('/api/curriculum').json()['items']}
+    assert items['1.4']['unlocked'] and not items['2.1']['unlocked']
+    # Placed-out missions count toward the checkpoint but are not marked as built.
+    s=game.read();s['completed']=['1.4'];game.save(s)
+    assert client.post('/api/quiz/start',json={'kind':'gate','target':'1'}).status_code==200
+    assert game.read()['completed']==['1.4']
+
+def test_advanced_skips_whole_rooms_but_keeps_final_project(client):
+    s=onboard(client,right=6)
+    p=s['profile']
+    assert '1.boss' in p['skipped'] and '2.boss' not in p['skipped'] and '2.4' not in p['skipped']
+    assert s['open_worlds']==[1,2] and s['current_world']==2
+    items={x['id']:x for x in client.get('/api/curriculum').json()['items']}
+    assert items['2.4']['unlocked'] and items['1.boss']['unlocked']
+    # Learning to code only: everything is placed out except the room project.
+    p=onboard(client,right=6,goal='code')['profile']
+    assert '1.boss' not in p['skipped'] and p['est_hours']==5.5
+
+def test_goal_path_opens_rooms_off_the_path(client):
+    s=onboard(client,experience='never',goal='ai_apps',hours='2')
+    assert s['path_worlds']==[1,3] and s['open_worlds']==[1]
+    assert s['profile']['est_weeks']==math.ceil((8*2+2*5.5)/2)
+    st=game.read();st['bosses']=['1'];game.save(st)
+    s=client.get('/api/state').json()
+    assert s['open_worlds']==[1,2,3] and s['current_world']==3
+    learn(client,'3.1')
+    assert client.post('/api/quiz/start',json={'kind':'level','target':'3.1'}).status_code==200
+
+def test_retaking_onboarding_keeps_progress(client):
+    onboard(client,right=6)
+    s=game.read();s['completed']=['2.4'];s['xp']=150;game.save(s)
+    s=onboard(client,experience='never')
+    assert s['profile']['skipped']==[] and s['completed']==['2.4'] and s['xp']==150

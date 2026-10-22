@@ -1,0 +1,64 @@
+{
+  "questions": [
+    {"id": "field", "prompt": "What's your field?", "options": [
+      {"value": "ece", "label": "Electronics / ECE"},
+      {"value": "cs", "label": "Computer science / IT"},
+      {"value": "engineering", "label": "Other engineering"},
+      {"value": "science", "label": "Science (biology, chemistry, physics)"},
+      {"value": "business", "label": "Business / finance"},
+      {"value": "design", "label": "Design / arts"},
+      {"value": "other", "label": "Something else"}
+    ]},
+    {"id": "experience", "prompt": "How much have you coded before?", "options": [
+      {"value": "never", "label": "Never", "note": "We'll start from the very first step."},
+      {"value": "little", "label": "A little", "note": "Tutorials, a class, or small scripts."},
+      {"value": "comfortable", "label": "Comfortable", "note": "I can write functions and small programs."},
+      {"value": "professional", "label": "Professionally", "note": "I write code for work."}
+    ]},
+    {"id": "goal", "prompt": "What do you want to be able to do?", "options": [
+      {"value": "code", "label": "Learn to code", "note": "Python foundations: Room 1."},
+      {"value": "backend", "label": "Build web backends and APIs", "note": "Rooms 1 and 2."},
+      {"value": "ai_apps", "label": "Use AI on my own documents and data", "note": "Rooms 1 and 3: search and RAG."},
+      {"value": "ai_engineer", "label": "Become an AI engineer", "note": "All four rooms."}
+    ]},
+    {"id": "hours", "prompt": "How many hours a week can you give it?", "options": [
+      {"value": "2", "label": "About 2 hours"},
+      {"value": "5", "label": "About 5 hours"},
+      {"value": "10", "label": "About 10 hours"},
+      {"value": "20", "label": "20 or more"}
+    ]},
+    {"id": "support", "prompt": "How much help do you want along the way?", "options": [
+      {"value": "guide", "label": "Guide me", "note": "Walk me through things."},
+      {"value": "hints", "label": "Hints when I ask", "note": "Let me try first."},
+      {"value": "none", "label": "No hand-holding", "note": "Just the task and the tests."}
+    ]}
+  ],
+  "goals": {
+    "code": [1],
+    "backend": [1, 2],
+    "ai_apps": [1, 3],
+    "ai_engineer": [1, 2, 3, 4]
+  },
+  "tiers": ["beginner", "intermediate", "advanced"],
+  "levels": {
+    "1.1": "beginner", "1.2": "beginner", "1.3": "beginner", "1.4": "intermediate",
+    "2.1": "intermediate", "2.2": "intermediate", "2.3": "intermediate", "2.4": "advanced",
+    "3.1": "advanced", "3.2": "advanced", "3.3": "advanced", "3.4": "advanced",
+    "4.1": "advanced", "4.2": "advanced", "4.3": "advanced", "4.4": "advanced"
+  },
+  "hours_per_item": {"mission": 2, "checkpoint": 0.5, "project": 5},
+  "placement": [
+    {"tier": "beginner", "prompt": "What does this print?", "code": "x = 3\ny = x * 2\nprint(y + 1)",
+     "options": ["6", "7", "x * 2 + 1", "An error"], "answer": 1},
+    {"tier": "beginner", "prompt": "What does this print?", "code": "nums = [4, 8, 15]\nprint(nums[1])",
+     "options": ["4", "8", "15", "An IndexError"], "answer": 1},
+    {"tier": "intermediate", "prompt": "What does this print?", "code": "import json\ndata = json.loads('{\"ok\": true, \"n\": 2}')\nprint(data[\"n\"] + 1)",
+     "options": ["3", "\"21\"", "true", "A KeyError"], "answer": 0},
+    {"tier": "intermediate", "prompt": "A client sends a POST request with invalid JSON fields to your web API. Which HTTP status code fits best?",
+     "options": ["200 OK", "301 Moved Permanently", "422 Unprocessable Content", "503 Service Unavailable"], "answer": 2},
+    {"tier": "advanced", "prompt": "Two text embeddings have a cosine similarity close to 1.0. What does that suggest?",
+     "options": ["The texts have the same length", "The texts are about very similar things", "One text is a translation of the other", "The vectors are perpendicular"], "answer": 1},
+    {"tier": "advanced", "prompt": "In retrieval-augmented generation (RAG), why do we retrieve document chunks before calling the model?",
+     "options": ["To make the model train faster", "To shrink the model's weights", "To ground the answer in relevant source text", "To avoid tokenizing the question"], "answer": 2}
+  ]
+}

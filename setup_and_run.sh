@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 PYTHON="${GAUNTLET_PYTHON:-python3}"
+export GAUNTLET_PORT="${GAUNTLET_PORT:-8000}"
 if ! command -v "$PYTHON" >/dev/null 2>&1; then
   echo "Install Python 3.11 or 3.12 from python.org, then rerun this command."; exit 1
 fi
@@ -16,9 +17,9 @@ fi
 mkdir -p workspace data
 if [ ! -f .env ]; then cp .env.example .env; fi
 echo ""
-echo "ECE-to-AI: THE GAUNTLET"
-echo "Open http://localhost:8000  |  Ctrl+C to stop"
+echo "GAUNTLET ACADEMY"
+echo "Open http://localhost:$GAUNTLET_PORT  |  Ctrl+C to stop"
 echo "Edit quest files inside $(pwd)/workspace"
 echo "Verification runs your Python as your Mac user. Run only code you trust."
 echo ""
-exec python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+exec python -m uvicorn app.main:app --host 127.0.0.1 --port "$GAUNTLET_PORT"

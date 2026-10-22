@@ -1,5 +1,6 @@
 """Local-only learning game. Learner code runs as the current OS user, not in a sandbox."""
 import json
+import math
 import os
 import random
 import secrets
@@ -21,15 +22,18 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=Path(os.environ.get('GAUNTLET_DATA',ROOT/'data'))
+PORT=os.environ.get('GAUNTLET_PORT','8000')
 WORK=Path(os.environ.get('GAUNTLET_WORKSPACE',ROOT/'workspace')).resolve()
 DATA.mkdir(parents=True,exist_ok=True); WORK.mkdir(parents=True,exist_ok=True)
 CUR=json.loads((ROOT/'content/curriculum.json').read_text())
 BOSSES=json.loads((ROOT/'content/bosses.json').read_text())
 LESSONS=json.loads((ROOT/'content/lessons.json').read_text())
+PATHS=json.loads((ROOT/'content/paths.json').read_text())
+TIERS=PATHS['tiers']
 ITEMS={x['id']:x for x in CUR['levels']+BOSSES}
 LOCK=threading.RLock()
 BUSY=False
-app=FastAPI(title='ECE-to-AI: The Gauntlet',docs_url=None,redoc_url=None)
+app=FastAPI(title='Gauntlet Academy',docs_url=None,redoc_url=None)
 app.add_middleware(TrustedHostMiddleware,allowed_hosts=['localhost','127.0.0.1','testserver'])
 
 @app.middleware('http')
@@ -37,7 +41,7 @@ async def local_only(request:Request,call_next):
     if request.method not in ('GET','HEAD'):
         if request.headers.get('X-Gauntlet')!='local': return JSONResponse({'detail':'Local UI header required'},403)
         origin=request.headers.get('origin')
-        if origin and origin not in ('http://localhost:8000','http://127.0.0.1:8000','http://testserver'):
+        if origin and origin not in (f'http://localhost:{PORT}',f'http://127.0.0.1:{PORT}','http://testserver'):
             return JSONResponse({'detail':'Foreign origin rejected'},403)
     response=await call_next(request)
     response.headers['X-Content-Type-Options']='nosniff'
@@ -46,7 +50,7 @@ async def local_only(request:Request,call_next):
     return response
 
 def initial():
-    return dict(xp=0,hp=100,completed=[],quiz_passed=[],lessons_read=[],keys=[],badges=[],bosses=[],quiz_streak=0,best_streak=0,streak=0,last_active=None,quiz_scores={},combos={},review={},daily_reward=None,session=None,boss_hp={str(w):100 for w in range(1,5)})
+    return dict(xp=0,hp=100,completed=[],quiz_passed=[],lessons_read=[],keys=[],badges=[],bosses=[],quiz_streak=0,best_streak=0,streak=0,last_active=None,quiz_scores={},combos={},review={},daily_reward=None,session=None,profile=None,boss_hp={str(w):100 for w in range(1,5)})
 
 def read():
     with sqlite3.connect(DATA/'save.sqlite3') as db:
@@ -64,6 +68,23 @@ def save(s):
         db.execute('CREATE TABLE IF NOT EXISTS save (id INTEGER PRIMARY KEY, body TEXT NOT NULL)')
         db.execute('INSERT OR REPLACE INTO save VALUES (1,?)',(json.dumps(s),))
 
+def skipped(s):
+    return set(s['profile']['skipped']) if s['profile'] else set()
+
+def path_worlds(s):
+    return s['profile']['worlds'] if s['profile'] else [1,2,3,4]
+
+def cleared(id,s):
+    # Placed-out levels count as done for unlocking, but earn nothing.
+    return id in s['completed'] or id in skipped(s)
+
+def boss_done(w,s):
+    return str(w) in s['bosses'] or f'{w}.boss' in skipped(s)
+
+def world_open(w,s):
+    # Rooms outside the learner's goal never block the rooms after them.
+    return all(boss_done(p,s) for p in path_worlds(s) if p<w)
+
 def active(s):
     today=date.today().isoformat()
     if s['last_active']!=today:
@@ -72,10 +93,10 @@ def active(s):
 
 def unlocked(id,s):
     item=ITEMS[id];w=item['world']
-    if w>1 and str(w-1) not in s['bosses']: return False
-    if id.endswith('boss'): return str(w) in s['keys']
+    if not world_open(w,s): return False
+    if id.endswith('boss'): return str(w) in s['keys'] or id in skipped(s)
     n=int(id.split('.')[1])
-    return n==1 or f'{w}.{n-1}' in s['completed']
+    return n==1 or cleared(f'{w}.{n-1}',s)
 
 def public_q(q):
     return {k:v for k,v in q.items() if k not in ('answer','explanation')}
@@ -92,7 +113,10 @@ def view(s):
     result={k:v for k,v in s.items() if k not in ('session','review')}
     result['level']=1+s['xp']//200
     result['level_xp']=s['xp']%200
-    result['current_world']=min(4,len(s['bosses'])+1)
+    worlds=path_worlds(s)
+    result['path_worlds']=worlds
+    result['current_world']=next((w for w in worlds if not boss_done(w,s)),worlds[-1])
+    result['open_worlds']=[w for w in range(1,5) if world_open(w,s)]
     result['session']=session_view(s)
     result['workspace']=str(WORK)
     return result
@@ -137,7 +161,7 @@ def start(body:Start):
             questions=[dict(q,review_id=body.target+':'+str(i)) for i,q in enumerate(item['quiz'])]
         elif body.kind=='gate':
             if body.target not in ('1','2','3','4'): raise HTTPException(404,'Unknown world')
-            if not all(f'{body.target}.{i}' in s['completed'] for i in range(1,5)): raise HTTPException(403,'Complete all four coding quests first')
+            if not all(cleared(f'{body.target}.{i}',s) for i in range(1,5)): raise HTTPException(403,'Complete all four coding quests first')
             questions=[dict(q) for q in CUR['gatekeepers'][body.target]]
         elif body.kind=='daily':
             pool=[dict(q,review_id=item['id']+':'+str(i)) for item in CUR['levels'] if item['id'] in s['completed'] for i,q in enumerate(item['quiz'])]
@@ -293,6 +317,53 @@ def verify(body:Quest):
         elif not passed: s['hp']=max(0,s['hp']-10)
         active(s);save(s)
         return dict(passed=passed,output=output,reward=reward,state=view(s))
+
+# ---------------------------------------------------------------- onboarding and paths
+
+def placement_tier(experience,choices):
+    if experience=='never': return 'beginner'
+    right={t:0 for t in TIERS}
+    for q,c in zip(PATHS['placement'],choices): right[q['tier']]+=c==q['answer']
+    if right['beginner']<2 or right['intermediate']<1: return 'beginner'
+    if right['intermediate']<2 or right['advanced']<1: return 'intermediate'
+    return 'advanced'
+
+def build_plan(answers,choices):
+    tier=placement_tier(answers['experience'],choices)
+    worlds=PATHS['goals'][answers['goal']]
+    rank=TIERS.index(tier)
+    skip=[id for id,t in PATHS['levels'].items() if int(id.split('.')[0]) in worlds and TIERS.index(t)<rank]
+    # A fully placed-out room skips its project too, except the last room: every path ends with a project.
+    skip+=[f'{w}.boss' for w in worlds[:-1] if all(f'{w}.{n}' in skip for n in range(1,5))]
+    hours=PATHS['hours_per_item']
+    missions=sum(1 for id in PATHS['levels'] if int(id.split('.')[0]) in worlds and id not in skip)
+    projects=sum(1 for w in worlds if f'{w}.boss' not in skip)
+    total=missions*hours['mission']+projects*(hours['checkpoint']+hours['project'])
+    return dict(answers,tier=tier,placement_score=sum(c==q['answer'] for q,c in zip(PATHS['placement'],choices)),
+                worlds=worlds,skipped=skip,est_hours=total,est_weeks=math.ceil(total/int(answers['hours'])))
+
+@app.get('/api/onboarding')
+def onboarding():
+    return dict(questions=PATHS['questions'],placement=[public_q(q) for q in PATHS['placement']])
+
+class Onboard(BaseModel):
+    field:str
+    experience:str
+    goal:str
+    hours:str
+    support:str
+    placement:list[int|None]=[]
+
+@app.post('/api/onboarding')
+def set_profile(body:Onboard):
+    answers=body.model_dump(exclude={'placement'})
+    for q in PATHS['questions']:
+        if answers[q['id']] not in [o['value'] for o in q['options']]: raise HTTPException(422,f'Unknown answer for {q["id"]}')
+    choices=body.placement if body.experience!='never' else []
+    if body.experience!='never' and len(choices)!=len(PATHS['placement']): raise HTTPException(422,'Answer or skip every placement question')
+    with LOCK:
+        s=read();s['profile']=build_plan(answers,choices);active(s);save(s)
+        return view(s)
 
 @app.get('/api/export')
 def export():
