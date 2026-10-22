@@ -541,3 +541,5 @@ pre.numbered span::before { content: counter(line); display: inline-block; width
 .option span small { display: block; margin-top: 2px; color: var(--muted); font-size: .86rem; }
 .mission.placed .num { border-style: dashed; color: var(--accent); }
 .map-head .eyebrow a { color: inherit; }
+.fast-lane { flex-wrap: wrap; }
+.fast-lane .actions { margin: 0; }

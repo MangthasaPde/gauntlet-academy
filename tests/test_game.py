@@ -181,3 +181,23 @@ def test_retaking_onboarding_keeps_progress(client):
     s=game.read();s['completed']=['2.4'];s['xp']=150;game.save(s)
     s=onboard(client,experience='never')
     assert s['profile']['skipped']==[] and s['completed']==['2.4'] and s['xp']==150
+
+def test_beginners_lose_less_health(client):
+    assert client.get('/api/state').json()['penalty']==10
+    onboard(client,experience='never')
+    s=trial(client,wrong=(0,));assert s['penalty']==5 and s['hp']==95
+    onboard(client,right=3)
+    s=trial(client,target='1.4',wrong=(0,));assert s['hp']==85
+
+def test_challenge_skips_quiz_without_bonus(client,monkeypatch):
+    onboard(client,right=3)
+    assert client.post('/api/initialize',json={'id':'1.4'}).status_code==403
+    assert client.post('/api/challenge',json={'id':'2.1'}).status_code==403
+    assert client.post('/api/challenge',json={'id':'1.boss'}).status_code==403
+    s=client.post('/api/challenge',json={'id':'1.4'}).json();assert s['challenges']==['1.4']
+    assert client.post('/api/initialize',json={'id':'1.4'}).status_code==200
+    monkeypatch.setattr(game,'run_verification',lambda id:(True,'all tests pass'))
+    r=client.post('/api/verify',json={'id':'1.4'}).json()
+    assert r['passed'] and r['reward']==100
+    # With 1.1-1.3 placed out and 1.4 built by challenge, the checkpoint opens.
+    assert client.post('/api/quiz/start',json={'kind':'gate','target':'1'}).status_code==200

@@ -50,7 +50,7 @@ async def local_only(request:Request,call_next):
     return response
 
 def initial():
-    return dict(xp=0,hp=100,completed=[],quiz_passed=[],lessons_read=[],keys=[],badges=[],bosses=[],quiz_streak=0,best_streak=0,streak=0,last_active=None,quiz_scores={},combos={},review={},daily_reward=None,session=None,profile=None,boss_hp={str(w):100 for w in range(1,5)})
+    return dict(xp=0,hp=100,completed=[],quiz_passed=[],lessons_read=[],keys=[],badges=[],bosses=[],quiz_streak=0,best_streak=0,streak=0,last_active=None,quiz_scores={},combos={},review={},daily_reward=None,session=None,profile=None,challenges=[],boss_hp={str(w):100 for w in range(1,5)})
 
 def read():
     with sqlite3.connect(DATA/'save.sqlite3') as db:
@@ -80,6 +80,14 @@ def cleared(id,s):
 
 def boss_done(w,s):
     return str(w) in s['bosses'] or f'{w}.boss' in skipped(s)
+
+def penalty(s):
+    # Beginners lose less health per mistake.
+    return 5 if s['profile'] and s['profile']['tier']=='beginner' else 10
+
+def build_open(id,s):
+    # Build normally follows a passed quiz; challenge mode goes straight to it.
+    return 'quiz' not in ITEMS[id] or id in s['quiz_passed'] or id in s['challenges']
 
 def world_open(w,s):
     # Rooms outside the learner's goal never block the rooms after them.
@@ -118,6 +126,7 @@ def view(s):
     result['current_world']=next((w for w in worlds if not boss_done(w,s)),worlds[-1])
     result['open_worlds']=[w for w in range(1,5) if world_open(w,s)]
     result['session']=session_view(s)
+    result['penalty']=penalty(s)
     result['workspace']=str(WORK)
     return result
 
@@ -200,7 +209,7 @@ def answer(body:Answer):
             raise HTTPException(409,'Time expired. Start a fresh trial.')
         q=t['questions'][t['index']];correct=body.choice==q['answer']
         if correct: t['correct']+=1;s['quiz_streak']+=1
-        else: s['hp']=max(0,s['hp']-10);s['quiz_streak']=0
+        else: s['hp']=max(0,s['hp']-penalty(s));s['quiz_streak']=0
         s['best_streak']=max(s['best_streak'],s['quiz_streak'])
         rid=q.get('review_id')
         if rid:
@@ -239,6 +248,16 @@ def complete_lesson(body:Lesson):
         active(s);save(s)
         return view(s)
 
+@app.post('/api/challenge')
+def challenge(body:Lesson):
+    # Skip the lesson and quiz. The build then earns base XP, without the quiz bonus.
+    with LOCK:
+        s=read();item=item_or_404(body.id)
+        if 'quiz' not in item or not unlocked(body.id,s): raise HTTPException(403,'This mission is locked')
+        if body.id not in s['challenges']: s['challenges'].append(body.id)
+        active(s);save(s)
+        return view(s)
+
 @app.post('/api/recover')
 def recover():
     with LOCK:
@@ -253,7 +272,7 @@ def initialize(body:Quest):
     item=item_or_404(body.id)
     with LOCK:
         s=read()
-        if not unlocked(body.id,s) or ('quiz' in item and body.id not in s['quiz_passed']): raise HTTPException(403,'Pass the knowledge trial or earn the Boss Key first')
+        if not unlocked(body.id,s) or not build_open(body.id,s): raise HTTPException(403,'Pass the knowledge trial or earn the Boss Key first')
         relative=Path(item['path']); dest=WORK/relative
         if not dest.resolve().is_relative_to(WORK): raise HTTPException(400,'Workspace path escapes project')
         dest.parent.mkdir(parents=True,exist_ok=True)
@@ -295,7 +314,7 @@ def verify(body:Quest):
     item=item_or_404(body.id)
     with LOCK:
         s=read();alive(s)
-        if not unlocked(body.id,s) or ('quiz' in item and body.id not in s['quiz_passed']): raise HTTPException(403,'Quest is locked')
+        if not unlocked(body.id,s) or not build_open(body.id,s): raise HTTPException(403,'Quest is locked')
         target=WORK/item['path']
         if not target.exists(): raise HTTPException(409,'Initialize Quest Files first')
         if not target.resolve().is_relative_to(WORK): raise HTTPException(400,'Quest path escapes workspace')
@@ -314,7 +333,7 @@ def verify(body:Quest):
                 w=str(item['world']);s['bosses'].append(w);s['boss_hp'][w]=0
                 s['badges'].append(['Scribe Slayer','Nexus Guardian','Hydra Tamer','The Architect'][item['world']-1])
             elif body.id=='1.1': s['badges'].append('First Signal')
-        elif not passed: s['hp']=max(0,s['hp']-10)
+        elif not passed: s['hp']=max(0,s['hp']-penalty(s))
         active(s);save(s)
         return dict(passed=passed,output=output,reward=reward,state=view(s))
 

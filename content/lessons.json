@@ -312,7 +312,7 @@
      "A **virtual environment** (`.venv`) is a private component bin for one project: its own Python packages, isolated from every other project.",
      "The game's launcher already created one and installed everything. To use it in your own terminal, activate it first."
     ],
-    "code": "cd ECE-to-AI\nsource .venv/bin/activate\npython --version"
+    "code": "cd gauntlet-academy\nsource .venv/bin/activate\npython --version"
    },
    {
     "title": "Secrets live outside your code",

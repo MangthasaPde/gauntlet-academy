@@ -56,6 +56,11 @@ const built = id => state.completed.includes(id);
 const placedOut = id => !!state.profile && state.profile.skipped.includes(id) && !built(id);
 const cleared = id => built(id) || placedOut(id);
 const bossCleared = w => state.bosses.includes(String(w)) || placedOut(w + '.boss');
+const challenged = id => state.challenges.includes(id);
+const canBuild = id => quizPassed(id) || challenged(id);
+const support = () => state.profile?.support || 'hints';
+// Skipping ahead is offered to anyone past beginner, or who asked for no hand-holding.
+const fastLane = () => !!state.profile && (state.profile.tier !== 'beginner' || support() === 'none');
 
 function store(key, value) {
   try {
@@ -68,6 +73,7 @@ const lessonPage = id => store('lesson:' + id) || 0;
 // The single most useful next action for a mission, or null when it is finished.
 function missionNext(l) {
   if (!l.unlocked || placedOut(l.id)) return null;
+  if (challenged(l.id) && !built(l.id)) return {step: 'build', label: 'Challenge: build and test your code'};
   if (!l.lesson_done) {
     const p = lessonPage(l.id);
     return {step: 'learn', label: p ? `Continue lesson (page ${p + 1} of ${l.lesson_pages.length})` : 'Start the lesson'};
@@ -343,7 +349,7 @@ function stepper(l, current) {
   const steps = [
     ['learn', 'Learn', l.lesson_done, true],
     ['quiz', 'Quiz', quizPassed(l.id), l.lesson_done],
-    ['build', 'Build', built(l.id), quizPassed(l.id)],
+    ['build', 'Build', built(l.id), canBuild(l.id)],
   ];
   return `<nav class="stepper" aria-label="Mission steps">${steps.map(([key, label, done, open], i) =>
     `<button class="step ${key === current ? 'current' : ''} ${done ? 'done' : ''}" ${open ? `data-go="#/mission/${l.id}/${key}"` : 'disabled'} ${key === current ? 'aria-current="step"' : ''}>
@@ -362,7 +368,7 @@ function mission(id, step) {
   if (!l.unlocked) return render(`<div class="wrap narrow"><a class="back" href="#/room/${l.world}">← Room ${l.world}</a><div class="card center"><h2>🔒 Not unlocked yet</h2><p>Finish the previous mission first.</p></div></div>`);
   // Send people to the earliest step they can actually use.
   if (step === 'quiz' && !l.lesson_done) step = 'learn';
-  if (step === 'build' && !quizPassed(id)) step = l.lesson_done ? 'quiz' : 'learn';
+  if (step === 'build' && !canBuild(id)) step = l.lesson_done ? 'quiz' : 'learn';
   if (step === 'learn') return learn(l);
   if (step === 'quiz') return quizStep(l);
   return build(l);
@@ -381,7 +387,7 @@ function learn(l) {
 
   render(`<div class="wrap narrow">
     ${missionHeader(l, 'learn')}
-    ${hpBanner()}
+    ${hpBanner()}${fastLaneBar(l)}
     <div class="page-progress"><span>Page ${i + 1} of ${total}</span><div class="bar"><i style="width:${(i + 1) / total * 100}%"></i></div></div>
     <article class="card lesson">${p.type === 'check' ? checkHTML(p, key, answered) : pageHTML(p)}</article>
     <div class="pager">
@@ -409,11 +415,29 @@ function learn(l) {
     } catch (e) { toast(e.message, 'bad'); }
   };
   if (p.type === 'check') bindCheck(l, p, key);
+  bindFastLane(l);
   keyNav = e => {
     if (e.key === 'ArrowRight' && !$('#next').disabled) $('#next').click();
     if (e.key === 'ArrowLeft' && i > 0) $('#prev').click();
   };
   bindCommon();
+}
+
+function fastLaneBar(l) {
+  if (!fastLane() || built(l.id) || canBuild(l.id)) return '';
+  return `<div class="banner fast-lane"><div><strong>Know this already?</strong> Skip the lesson, or take the challenge: go straight to Build without the quiz bonus.</div>
+    <div class="actions">${l.lesson_done ? '' : '<button class="btn small ghost" id="skip-lesson">Skip to the quiz</button>'}<button class="btn small secondary" id="challenge">Challenge: Build now</button></div></div>`;
+}
+
+function bindFastLane(l) {
+  if ($('#skip-lesson')) $('#skip-lesson').onclick = async () => {
+    try { await api('lesson/complete', {id: l.id}); await refresh(); location.hash = `#/mission/${l.id}/quiz`; }
+    catch (e) { toast(e.message, 'bad'); }
+  };
+  if ($('#challenge')) $('#challenge').onclick = async () => {
+    try { await api('challenge', {id: l.id}); await refresh(); location.hash = `#/mission/${l.id}/build`; }
+    catch (e) { toast(e.message, 'bad'); }
+  };
 }
 
 function pageHTML(p) {
@@ -488,12 +512,12 @@ function quizStep(l) {
     ? `<div class="banner"><div>You're partway through this quiz (question ${s.index + 1} of ${s.total}).</div><button class="btn small secondary" data-go="#/quiz">Resume</button></div>` : '';
   render(`<div class="wrap narrow">
     ${missionHeader(l, 'quiz')}
-    ${hpBanner()}${resume}
+    ${hpBanner()}${resume}${fastLaneBar(l)}
     <div class="card">
       ${passed ? `<h2>✓ Quiz passed</h2><p>The Build step is open. You can retake the quiz any time for practice — it won't change your rewards.</p>`
         : `<h2>Quick quiz</h2>
            <p>3 questions about this lesson: one asks you to predict output, one to spot a bug, and one checks the concept.</p>
-           <ul class="rules"><li>Get all <b>3 right</b> in one go to unlock Build.</li><li>Each wrong answer costs <b>10 health</b> and shows an explanation.</li><li>You can retry as many times as you like.</li></ul>
+           <ul class="rules"><li>Get all <b>3 right</b> in one go to unlock Build.</li><li>Each wrong answer costs <b>${state.penalty} health</b> and shows an explanation.</li><li>You can retry as many times as you like.</li></ul>
            ${best !== undefined ? `<p class="muted">Your best so far: ${best} / 3</p>` : ''}`}
       <div class="actions">
         ${passed ? `<button class="btn" data-go="#/mission/${l.id}/build">Go to Build →</button><button class="btn ghost" id="start">Retake quiz</button>`
@@ -539,7 +563,7 @@ function quiz() {
       <h2>${esc(q.prompt)}</h2>
       ${q.code ? `<pre class="code numbered"><code>${q.code.split('\n').map(line => `<span>${esc(line)}</span>`).join('\n')}</code></pre>` : ''}
       <div class="options">${q.options.map((o, i) => `<button class="option" data-choice="${i}" ${f ? 'disabled' : ''}><b>${'ABCD'[i]}</b><span>${esc(o)}</span></button>`).join('')}</div>
-      ${f ? `<div class="feedback ${f.correct ? 'good' : 'bad'}"><strong>${f.correct ? 'Correct.' : 'Not quite. −10 health.'}</strong> ${esc(f.explanation)}
+      ${f ? `<div class="feedback ${f.correct ? 'good' : 'bad'}"><strong>${f.correct ? 'Correct.' : `Not quite. −${state.penalty} health.`}</strong> ${esc(f.explanation)}
         ${f.correct ? '' : `<div class="answer">Correct answer: <b>${esc(f.correct_answer)}</b></div>`}</div>` : ''}
     </article>
     <div class="pager"><span class="muted">${t.correct} correct so far · ♥ ${state.hp}</span>
@@ -617,9 +641,12 @@ function quizResult(t) {
 function buildPanel(l, boss) {
   const id = l.id, done = built(id), path = state.workspace + '/' + l.path;
   const created = store('created:' + id);
-  const hintsShown = store('hints:' + id) || 0;
+  // "Guide me" starts with the first hint showing; "No hand-holding" keeps hints folded away.
+  const hintsShown = Math.max(store('hints:' + id) || 0, support() === 'guide' ? 1 : 0);
+  const hintsFolded = support() === 'none' && !hintsShown && !store('hintsOpen:' + id);
   const result = verifyResults[id];
   return `
+    ${challenged(id) && !quizPassed(id) && !done ? '<div class="banner"><div><strong>Challenge mode.</strong> You skipped the quiz, so a pass earns 100 XP instead of 150.</div></div>' : ''}
     ${done ? `<div class="banner good"><div><strong>✓ ${boss ? 'Project complete.' : 'Mission complete.'}</strong> You can keep improving your code and rerun the tests.</div>
       ${boss ? '' : nextMissionButton(l)}</div>` : ''}
     <section class="card">
@@ -637,14 +664,15 @@ function buildPanel(l, boss) {
         <h3><span class="step-num">2</span> Write your code</h3>
         <p>Open the file in your editor, replace the <code>TODO</code> / <code>NotImplementedError</code> with your solution, and save.</p>
         <div class="actions"><a class="btn secondary" href="vscode://file${encodeURI(path)}">Open in VS Code</a></div>
-        ${l.hints.length ? `<div class="hints">
+        ${l.hints.length && hintsFolded ? '<div class="hints"><button class="btn small ghost" id="hints-open">Stuck? Show hints</button></div>' : ''}
+        ${l.hints.length && !hintsFolded ? `<div class="hints">
           ${l.hints.slice(0, hintsShown).map((h, i) => `<div class="hint"><b>Hint ${i + 1}</b> ${md(h)}</div>`).join('')}
           ${hintsShown < l.hints.length ? `<button class="btn small ghost" id="hint">Show a hint (${hintsShown + 1} of ${l.hints.length})</button>` : ''}
         </div>` : ''}
       </li>
       <li class="card">
         <h3><span class="step-num">3</span> Check your work</h3>
-        <p>Runs the automated tests against your file. ${done ? 'Reruns are free.' : 'A failed run costs 10 health; read the output to see what to fix.'}</p>
+        <p>Runs the automated tests against your file. ${done ? 'Reruns are free.' : `A failed run costs ${state.penalty} health; read the output to see what to fix.`}</p>
         <div class="actions"><button class="btn" id="verify" ${state.hp > 0 ? '' : 'disabled'}>Run tests</button></div>
         <div id="result">${result ? resultHTML(result) : ''}</div>
       </li>
@@ -688,7 +716,8 @@ function bindBuild(l, rerender) {
       rerender();
     } catch (e) { toast(e.message, 'bad'); }
   };
-  if ($('#hint')) $('#hint').onclick = () => { store('hints:' + id, (store('hints:' + id) || 0) + 1); rerender(); };
+  if ($('#hint')) $('#hint').onclick = () => { store('hints:' + id, Math.max(store('hints:' + id) || 0, support() === 'guide' ? 1 : 0) + 1); rerender(); };
+  if ($('#hints-open')) $('#hints-open').onclick = () => { store('hintsOpen:' + id, true); rerender(); };
   $('#verify').onclick = async () => {
     const b = $('#verify');
     b.disabled = true;
@@ -698,7 +727,7 @@ function bindBuild(l, rerender) {
       verifyResults[id] = r;
       await refresh();
       if (r.passed) toast(r.reward ? `Passed! +${r.reward} XP` : 'All tests passed.', 'good');
-      else toast('Some tests failed — see the details below. −10 health', 'bad');
+      else toast(`Some tests failed — see the details below. −${state.penalty} health`, 'bad');
     } catch (e) { toast(e.message, 'bad'); }
     rerender();
     const res = $('#result');
@@ -726,7 +755,7 @@ function gate(w) {
       <span class="eyebrow">Room ${w} checkpoint</span>
       <h1>${key ? '✓ Checkpoint passed' : 'Checkpoint quiz'}</h1>
       <p>10 questions covering all four missions in this room.</p>
-      <ul class="rules"><li>Score <b>8 or more</b> to unlock the room project.</li><li>Each wrong answer costs <b>10 health</b>.</li><li>Your answers are saved as you go.</li></ul>
+      <ul class="rules"><li>Score <b>8 or more</b> to unlock the room project.</li><li>Each wrong answer costs <b>${state.penalty} health</b>.</li><li>Your answers are saved as you go.</li></ul>
       ${best !== undefined ? `<p class="muted">Your best so far: ${best} / 10</p>` : ''}
       <label class="check"><input type="checkbox" id="timed"> Add a 5-minute timer (optional challenge)</label>
       <div class="actions">
@@ -800,7 +829,7 @@ function progress() {
     </div>
     <section class="card">
       <h2>Health</h2>
-      <p>You have <b>${state.hp} / 100</b>. Wrong quiz answers and failed test runs cost 10; your first pass of each Build step gives back 20. Restoring is free and never loses progress (it only resets an unfinished quiz).</p>
+      <p>You have <b>${state.hp} / 100</b>. Wrong quiz answers and failed test runs cost ${state.penalty}; your first pass of each Build step gives back 20. Restoring is free and never loses progress (it only resets an unfinished quiz).</p>
       <div class="actions"><button class="btn secondary" data-heal ${state.hp === 100 ? 'disabled' : ''}>Restore health</button></div>
     </section>
     <section class="card">
@@ -843,7 +872,7 @@ function help() {
       <h2>The three steps of every mission</h2>
       <ol class="plain">
         <li><b>Learn.</b> Short pages, one idea each, with practice questions. Practice never costs health.</li>
-        <li><b>Quiz.</b> Three questions. Get all three right to unlock Build. Wrong answers cost 10 health but show the explanation.</li>
+        <li><b>Quiz.</b> Three questions. Get all three right to unlock Build. Wrong answers cost ${state.penalty} health but show the explanation.</li>
         <li><b>Build.</b> Create the starter file, write the code in your editor, and run the tests. Failed runs show exactly which checks failed.</li>
       </ol>
       <p>After four missions, a 10-question checkpoint (8 to pass) unlocks the room project. Finishing the project opens the next room.</p>
@@ -851,7 +880,7 @@ function help() {
     <section class="card">
       <h2>Where your code lives</h2>
       <p>Everything you write goes in the <code>workspace/</code> folder inside this project: <code>${esc(state.workspace)}</code>.</p>
-      <pre class="code"><code>cd ECE-to-AI
+      <pre class="code"><code>cd gauntlet-academy
 source .venv/bin/activate
 code workspace/
 # run one mission's tests yourself:

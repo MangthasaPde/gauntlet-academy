@@ -23,7 +23,13 @@ On first launch the game asks five questions (field, coding experience, goal, ho
 - **Placement** sets your starting tier. Missions below it are *placed out*: they count as done for unlocking, stay playable, and earn XP only when you actually build them. A fully placed-out room skips its checkpoint and project, but every path still ends with a project.
 - **Your path** (`#/path`, also linked from Progress) shows the rooms, placed-out missions and a time estimate, and lets you change your answers. Changing answers recomputes placement but never removes progress.
 
-Level tiers, goals, onboarding questions and placement questions live in `content/paths.json`. Field-specific examples and help-level settings are recorded in the profile but not yet used by lessons.
+### Help that fits
+
+- **Health:** beginners lose 5 health per mistake instead of 10.
+- **Hints:** *Guide me* shows the first hint automatically; *Hints when I ask* works as before; *No hand-holding* folds hints behind a "Stuck?" button.
+- **Fast lane:** anyone past beginner, or who chose *No hand-holding*, can skip a lesson straight to its quiz, or take **challenge mode** and go straight to Build. A challenge pass earns 100 XP instead of 150 because it skips the quiz bonus.
+
+Level tiers, goals, onboarding questions and placement questions live in `content/paths.json`. Field-specific examples are recorded in the profile but not yet used by lessons.
 
 ## Play your first mission
 
