@@ -114,6 +114,27 @@
      "code": "prices = [10, 20, 30]\nprint(prices[0])\nprint(prices[-1])\nprint(len(prices))",
      "output": "10\n30\n3"
     },
+    "1": {
+     "title": "for loops visit each item",
+     "body": [
+      "A `for` loop runs its indented body once per item, binding the item to a name you choose."
+     ],
+     "code": "for price in [3, 7, 1]:\n    print(price * 10)",
+     "output": "30\n70\n10"
+    },
+    "2": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "7",
+      "5",
+      "6",
+      "IndexError"
+     ],
+     "answer": 0,
+     "explain": "-1 refers to the last item in the list.",
+     "code": "prices = [5, 6, 7]\nprint(prices[-1])"
+    },
     "3": {
      "title": "Conditions decide what passes",
      "body": [
@@ -131,6 +152,15 @@
      ],
      "code": "def positive(prices):\n    result = []\n    for s in prices:\n        if s > 0:\n            result.append(s)\n    return result\n\ndata = [-2, 4, 0, 7]\nprint(positive(data))\nprint(data)",
      "output": "[4, 7]\n[-2, 4, 0, 7]"
+    },
+    "6": {
+     "title": "The compact version: comprehensions",
+     "body": [
+      "A **list comprehension** expresses the same filter in one line: `[x for x in prices if condition]`.",
+      "Write the loop version first if it helps you think — both are correct."
+     ],
+     "code": "prices = [1, 2, 3, 4]\nevens = [x for x in prices if x % 2 == 0]\nprint(evens)",
+     "output": "[2, 4]"
     },
     "8": {
      "title": "Your mission: filter_prices",
@@ -171,7 +201,7 @@
      "prompt": "Why return a new filtered list?",
      "options": [
       "It sorts automatically",
-      "It changes every sample to float",
+      "It changes every price to float",
       "It avoids surprising changes to the caller’s data",
       "It removes duplicates automatically"
      ],
@@ -755,7 +785,7 @@
     "prompt": "Why return a new filtered list?",
     "options": [
      "It sorts automatically",
-     "It changes every sample to float",
+     "It changes every price to float",
      "It avoids surprising changes to the caller’s data",
      "It removes duplicates automatically"
     ],

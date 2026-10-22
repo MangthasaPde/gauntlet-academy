@@ -1,0 +1,880 @@
+{
+ "levels": {
+  "1.1": {
+   "title": "Control Room: Gauge Readings",
+   "quest": "Implement format_gauge(gauge_id, pressure, online). Return exactly \"<id> | <pressure to 2 decimals> bar | ONLINE\" (or OFFLINE when online is False). Do not print instead of returning. Example: format_gauge(\"G-1\", 3.3, True) → \"G-1 | 3.30 bar | ONLINE\". Accept negative and zero pressures (gauge pressure reads negative under vacuum).",
+   "hints": [
+    "Start with status = \"ONLINE\" if online else \"OFFLINE\".",
+    "Use an f-string with {pressure:.2f}; spaces and punctuation are part of the contract."
+   ],
+   "pages": {
+    "0": {
+     "title": "Variables are labels",
+     "body": [
+      "A **variable** is a name attached to a value — like a tag on a valve. You create one with `=`.",
+      "Once a name exists you can reuse it anywhere below that line. Python reads your file from top to bottom."
+     ],
+     "code": "pressure = 3.3\ngauge = \"G-1\"\nonline = True\nprint(gauge, pressure, online)",
+     "output": "G-1 3.3 True",
+     "note": "`=` stores a value. `==` asks a question (\"are these equal?\"). Mixing them up is the most common beginner bug."
+    },
+    "1": {
+     "title": "Four basic types",
+     "body": [
+      "Every value has a **type**. You will use these four constantly:",
+      "`int` — whole numbers like `42`. `float` — decimals like `3.3`. `str` — text in quotes like `\"G-1\"`. `bool` — `True` or `False`.",
+      "Quotes matter: `\"3.3\"` is text, `3.3` is a number. `type(x)` tells you what you have."
+     ],
+     "code": "print(type(42))\nprint(type(3.3))\nprint(type(\"3.3\"))\nprint(type(True))",
+     "output": "<class 'int'>\n<class 'float'>\n<class 'str'>\n<class 'bool'>"
+    },
+    "3": {
+     "title": "Functions are standard parts",
+     "body": [
+      "A **function** packages a piece of logic so you can reuse it. Parameters are the inputs you feed in; `return` is the output that comes out, like a machine on a production line.",
+      "The body is everything indented by four spaces under the `def` line. The function does nothing until you **call** it with parentheses."
+     ],
+     "code": "def double(x):\n    result = x * 2\n    return result\n\nprint(double(21))",
+     "output": "42"
+    },
+    "6": {
+     "title": "Formatting numbers with f-strings",
+     "body": [
+      "Put `f` before a string and you can drop values into it with `{}`.",
+      "After a colon you can add a **format spec**. `:.2f` means \"show as a float with exactly 2 decimal places\" — it rounds the display and leaves the original value alone."
+     ],
+     "code": "pressure = 3.14159\nprint(f\"Pressure = {pressure:.2f} bar\")\nprint(f\"Pressure = {0:.2f} bar\")\nprint(pressure)",
+     "output": "Pressure = 3.14 bar\nPressure = 0.00 bar\n3.14159"
+    },
+    "7": {
+     "title": "Picking between two values",
+     "body": [
+      "A **conditional expression** chooses one of two values in a single line: `A if condition else B`.",
+      "It is perfect for turning a bool into a label."
+     ],
+     "code": "online = False\nstatus = \"ONLINE\" if online else \"OFFLINELINE\"\nprint(status)",
+     "output": "OFFLINE"
+    },
+    "8": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "2.50 bar",
+      "2.5 bar",
+      "2.500 bar",
+      "{v:.2f} bar"
+     ],
+     "answer": 0,
+     "explain": ":.2f always shows exactly two decimals, padding with zeros when needed.",
+     "code": "v = 2.5\nprint(f\"{v:.2f} bar\")"
+    },
+    "9": {
+     "title": "Your mission: format_gauge",
+     "body": [
+      "You will write `format_gauge(gauge_id, pressure, online)` and **return** one line of text. The exact shape is `<id> | <pressure with 2 decimals> bar | ONLINE` — or `OFFLINE` when `online` is False. Every space and `|` counts.",
+      "Examples the tests will check: `format_gauge(\"G-1\", 3.3, True)` → `\"G-1 | 3.30 bar | ONLINE\"` and `format_gauge(\"G-0\", 0, False)` → `\"G-0 | 0.00 bar | OFFLINE\"`. Negative values work the same way."
+     ],
+     "note": "Next: a 3-question quiz on these ideas. Pass it and the Build step unlocks."
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "3.30 bar",
+      "3.3 bar",
+      "pressure bar",
+      "TypeError"
+     ],
+     "answer": 0,
+     "explanation": "An f-string evaluates pressure and :.2f displays exactly two decimal places.",
+     "code": "pressure = 3.3\nunit = \"bar\"\ntext = f\"{pressure:.2f} {unit}\"\nprint(text)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "format_gauge"
+   ]
+  },
+  "1.2": {
+   "title": "Tolerance Check: Loops & Lists",
+   "quest": "Implement filter_loads(loads, low, high). Return a new list containing loads in the inclusive [low, high] range, in original order. Never mutate loads. Raise ValueError when low > high.",
+   "hints": [
+    "Check low > high before the loop, even when loads is empty.",
+    "Create result = []; append only loads satisfying low <= load <= high."
+   ],
+   "pages": {
+    "0": {
+     "title": "Lists hold loads in order",
+     "body": [
+      "A **list** is an ordered log of measurements: `[10, 20, 30]`. Each item has an index, and indexing starts at **0**.",
+      "Negative indexes count from the end: `-1` is the last item. `len(loads)` gives the item count."
+     ],
+     "code": "loads = [10, 20, 30]\nprint(loads[0])\nprint(loads[-1])\nprint(len(loads))",
+     "output": "10\n30\n3"
+    },
+    "1": {
+     "title": "for loops visit each item",
+     "body": [
+      "A `for` loop runs its indented body once per item, binding the item to a name you choose."
+     ],
+     "code": "for load in [3, 7, 1]:\n    print(load * 10)",
+     "output": "30\n70\n10"
+    },
+    "2": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "7",
+      "5",
+      "6",
+      "IndexError"
+     ],
+     "answer": 0,
+     "explain": "-1 refers to the last item in the list.",
+     "code": "loads = [5, 6, 7]\nprint(loads[-1])"
+    },
+    "3": {
+     "title": "Conditions decide what passes",
+     "body": [
+      "`if` runs its body only when the condition is True. Comparisons like `<`, `<=`, `==` produce bools.",
+      "Python lets you **chain** comparisons: `low <= x <= high` means \"x is between low and high, including both ends\" — like the tolerance band on an engineering drawing."
+     ],
+     "code": "low, high = 0, 5\nfor x in [-1, 0, 3, 5, 9]:\n    if low <= x <= high:\n        print(x, \"passes\")",
+     "output": "0 passes\n3 passes\n5 passes"
+    },
+    "4": {
+     "title": "Build a new list, keep the input intact",
+     "body": [
+      "To filter, start with an empty list and `append` what you want to keep. The caller's original list stays unchanged.",
+      "Never delete items from a list while looping over it — the loop skips elements and the caller gets a surprise."
+     ],
+     "code": "def positive(loads):\n    result = []\n    for s in loads:\n        if s > 0:\n            result.append(s)\n    return result\n\ndata = [-2, 4, 0, 7]\nprint(positive(data))\nprint(data)",
+     "output": "[4, 7]\n[-2, 4, 0, 7]"
+    },
+    "6": {
+     "title": "The compact version: comprehensions",
+     "body": [
+      "A **list comprehension** expresses the same filter in one line: `[x for x in loads if condition]`.",
+      "Write the loop version first if it helps you think — both are correct."
+     ],
+     "code": "loads = [1, 2, 3, 4]\nevens = [x for x in loads if x % 2 == 0]\nprint(evens)",
+     "output": "[2, 4]"
+    },
+    "8": {
+     "title": "Your mission: filter_loads",
+     "body": [
+      "Write `filter_loads(loads, low, high)` returning a **new** list of loads where `low <= load <= high`, in the original order. Don't modify `loads`. If `low > high`, raise `ValueError`. Example: `filter_loads([-3, 0, 2, 5, 8], 0, 5)` → `[0, 2, 5]`. An empty input returns `[]`."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "[1, 2]",
+      "[2, 3]",
+      "[3]",
+      "[1, 2, 3]"
+     ],
+     "answer": 1,
+     "explanation": "x >= 2 admits both 2 and 3. The comprehension preserves their order.",
+     "code": "loads = [1, 2, 3]\ncutoff = 2\nkept = [x for x in loads if x >= cutoff]\nprint(kept)"
+    },
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1: bad list",
+      "Line 2: list index out of range",
+      "Line 3: printing is forbidden",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "A two-element list has indices 0 and 1. Index 2 is outside it.",
+     "code": "loads = [10, 20]\nlast = loads[2]\nprint(last)"
+    },
+    "2": {
+     "kind": "Concept",
+     "prompt": "Why return a new filtered list?",
+     "options": [
+      "It sorts automatically",
+      "It changes every load to float",
+      "It avoids surprising changes to the caller’s data",
+      "It removes duplicates automatically"
+     ],
+     "answer": 2,
+     "explanation": "A function that does not mutate its input is easier to reuse and reason about. A filter need not sort or deduplicate.",
+     "code": ""
+    }
+   },
+   "variant": true,
+   "contract": [
+    "filter_loads"
+   ]
+  },
+  "1.3": {
+   "title": "Inspection Report: Dictionaries & JSON",
+   "quest": "Implement restructure_inspection(raw_json). Input shape: {\"bridge\":{\"id\":\"A\"},\"strains\":[{\"strain\":3.0},{\"strain\":5.0}]}. Return {\"bridge_id\":\"A\",\"strains\":[3.0,5.0],\"average_strain\":4.0}. Empty strains → average_strain = None. Invalid JSON, missing/wrong-shaped fields, empty ID, or nonnumeric/boolean strain must raise ValueError. Ignore unrelated extra fields.",
+   "hints": [
+    "Wrap parsing and shape checks so malformed input consistently raises ValueError.",
+    "Build strains first; sum(strains) / len(strains) only when the list is nonempty."
+   ],
+   "pages": {
+    "0": {
+     "title": "Dictionaries map names to values",
+     "body": [
+      "A **dict** stores key → value pairs, like an inspection sheet with a labelled box for each check. Look a value up with `d[key]`.",
+      "A missing key raises `KeyError`. `d.get(key, default)` returns the default instead."
+     ],
+     "code": "reading = {\"id\": \"G-1\", \"pressure\": 3.3}\nprint(reading[\"pressure\"])\nprint(reading.get(\"unit\", \"bar\"))",
+     "output": "3.3\nbar"
+    },
+    "1": {
+     "title": "Nesting: dicts inside dicts, lists of dicts",
+     "body": [
+      "Real data nests. Chain lookups to drill down, and loop over lists of dicts."
+     ],
+     "code": "data = {\n    \"bridge\": {\"id\": \"A\"},\n    \"strains\": [{\"strain\": 3.0}, {\"strain\": 5.0}],\n}\nprint(data[\"bridge\"][\"id\"])\nfor r in data[\"strains\"]:\n    print(r[\"strain\"])",
+     "output": "A\n3.0\n5.0"
+    },
+    "2": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "A",
+      "{'id': 'A'}",
+      "bridge",
+      "KeyError"
+     ],
+     "answer": 0,
+     "explain": "data['bridge'] gives the inner dict; ['id'] then reads 'A' from it.",
+     "code": "data = {\"bridge\": {\"id\": \"A\"}}\nprint(data[\"bridge\"][\"id\"])"
+    },
+    "9": {
+     "title": "Your mission: restructure_inspection",
+     "body": [
+      "Write `restructure_inspection(raw_json)`. It receives JSON **text**, e.g. `{\"bridge\":{\"id\":\"A\"},\"strains\":[{\"strain\":3.0},{\"strain\":5.0}]}`. Return `{\"bridge_id\": \"A\", \"strains\": [3.0, 5.0], \"average_strain\": 4.0}`.",
+      "With no strains, `average_strain` is `None`. Raise `ValueError` for invalid JSON, missing or wrong-shaped fields, an empty ID, or non-numeric / boolean values. Ignore extra fields."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "A",
+      "7",
+      "id",
+      "KeyError"
+     ],
+     "answer": 0,
+     "explanation": "The first lookup selects the nested dictionary and the second selects its id.",
+     "code": "data = {\"bridge\": {\"id\": \"A\"}}\nbridge = data[\"bridge\"]\nlabel = bridge[\"id\"]\nprint(label)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "restructure_inspection"
+   ]
+  },
+  "1.4": {
+   "pages": {
+    "0": {
+     "title": "Virtual environments",
+     "body": [
+      "A **virtual environment** (`.venv`) is a dedicated toolbox for one project: its own Python packages, isolated from every other project.",
+      "The game's launcher already created one and installed everything. To use it in your own terminal, activate it first."
+     ],
+     "code": "cd gauntlet-academy\nsource .venv/bin/activate\npython --version"
+    },
+    "4": {
+     "title": "Calling Gemini",
+     "body": [
+      "The `google-genai` SDK gives you a client object. You ask it to generate content for a model and read `.text` from the response."
+     ],
+     "code": "from google import genai\n\nclient = genai.Client(api_key=key)\nresponse = client.models.generate_content(\n    model=model, contents=\"Explain finite element analysis in one line\")\nprint(response.text)",
+     "note": "Only create a client inside a function — never at import time — so importing your file never touches the network."
+    },
+    "5": {
+     "title": "Dependency injection: plug in a test fixture",
+     "body": [
+      "If your function builds its own client, tests can't avoid the network. Instead accept an optional `client` parameter. Real use passes nothing; tests pass a fake with the same shape.",
+      "It's like testing a design on a rig: swap a dummy load in for the real one and you can check everything safely."
+     ],
+     "code": "class FakeModels:\n    def generate_content(self, model, contents):\n        class R: text = \"fake reply\"\n        return R()\n\nclass FakeClient:\n    models = FakeModels()\n\ndef ask(prompt, client=None):\n    if client is None:\n        client = build_real_client()   # only when nothing was injected\n    return client.models.generate_content(model=\"m\", contents=prompt).text\n\nprint(ask(\"hi\", client=FakeClient()))",
+     "output": "fake reply"
+    }
+   }
+  },
+  "2.1": {
+   "quest": "Expose app, a FastAPI instance, with GET /gauge/{gauge_id}. Return {\"id\":gauge_id,\"pressure\":3.3}. The ID is a string.",
+   "pages": {
+    "0": {
+     "title": "HTTP in one page",
+     "body": [
+      "Web services talk with **HTTP**. A client sends a **request** (a method such as `GET`, plus a path like `/gauge/7`); the server sends back a **response** (a status code plus a body, usually JSON).",
+      "Think of it as a work order: every request names an action (method), says which part it is about (path) and may carry details (body)."
+     ],
+     "code": "GET /gauge/G-1          ← request\n200 OK                     ← response status\n{\"id\": \"G-1\", \"pressure\": 3.3}   ← response body"
+    },
+    "5": {
+     "type": "check",
+     "prompt": "With the route `/gauge/{gauge_id}`, a request to `/gauge/G-1` sets `gauge_id` to…",
+     "options": [
+      "\"G-1\"",
+      "7",
+      "\"/gauge/G-1\"",
+      "None"
+     ],
+     "answer": 0,
+     "explain": "The captured segment is passed as-is; with a str annotation it stays the string \"G-1\"."
+    },
+    "7": {
+     "title": "Your mission: a GET endpoint",
+     "body": [
+      "Your file already creates `app = FastAPI()`. Register `GET /gauge/{gauge_id}` that returns `{\"id\": gauge_id, \"pressure\": 3.3}`. Keep the ID a string. Unknown paths return 404 automatically."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "True",
+      "False",
+      "None",
+      "404"
+     ],
+     "answer": 0,
+     "explanation": "3.3 is greater than zero.",
+     "code": "payload = {\"pressure\": 3.3}\nvalue = payload[\"pressure\"]\nresult = value > 0\nprint(result)"
+    },
+    "2": {
+     "kind": "Concept",
+     "prompt": "Why use GET for reading a gauge?",
+     "options": [
+      "GET describes a read operation",
+      "GET encrypts requests",
+      "GET stores database rows",
+      "GET requires JSON bodies"
+     ],
+     "answer": 0,
+     "explanation": "HTTP methods communicate intent. GET is for retrieval.",
+     "code": ""
+    }
+   },
+   "variant": true,
+   "contract": [
+    "/gauge/{gauge_id}",
+    "pressure"
+   ]
+  },
+  "2.2": {
+   "quest": "Expose FastAPI app and POST /parts. Validate name is nonempty and tolerance is between 0 and 5 inclusive. Return the validated name and tolerance with HTTP 201.",
+   "pages": {
+    "0": {
+     "title": "POST sends a body",
+     "body": [
+      "`GET` reads. `POST` sends data in the request **body**, usually JSON, for the server to process or store."
+     ],
+     "code": "POST /parts\n{\"name\": \"A\", \"tolerance\": 2}"
+    },
+    "1": {
+     "title": "Pydantic: an inspection gate",
+     "body": [
+      "A **Pydantic model** declares the fields you expect and their types. Data that doesn't fit is rejected before your code runs — like an inspection gate that rejects a part with no serial number."
+     ],
+     "code": "from pydantic import BaseModel\n\nclass Part(BaseModel):\n    name: str\n    tolerance: float\n\ns = Part(name=\"A\", tolerance=2)\nprint(s.tolerance)",
+     "output": "2.0"
+    },
+    "2": {
+     "title": "Constraints with Field",
+     "body": [
+      "`Field` adds rules: `min_length=1` rejects empty text; `ge` / `le` mean greater-or-equal / less-or-equal (inclusive bounds)."
+     ],
+     "code": "from pydantic import BaseModel, Field\n\nclass Part(BaseModel):\n    name: str = Field(min_length=1)\n    tolerance: float = Field(ge=0, le=5)"
+    },
+    "3": {
+     "type": "check",
+     "prompt": "With `tolerance: float = Field(ge=0, le=5)`, is `tolerance=5` accepted?",
+     "options": [
+      "Yes — le means ≤, so 5 is allowed",
+      "No — 5 is outside the range",
+      "Only if it's written 5.0",
+      "Pydantic ignores numbers"
+     ],
+     "answer": 0,
+     "explain": "ge and le are inclusive. gt and lt would be exclusive."
+    },
+    "4": {
+     "title": "Models as route inputs",
+     "body": [
+      "Use the model as a parameter type and FastAPI reads the JSON body into it. Invalid bodies get an automatic **422** response — your function never runs."
+     ],
+     "code": "@app.post(\"/parts\", status_code=201)\ndef create(part: Part):\n    return part",
+     "note": "status_code=201 (Created) in the decorator changes the success code from the default 200."
+    },
+    "5": {
+     "type": "check",
+     "prompt": "A client POSTs `{\"name\": \"\", \"tolerance\": 2}`. What happens?",
+     "options": [
+      "FastAPI returns 422 automatically",
+      "The function runs with an empty name",
+      "The server crashes with 500",
+      "It returns 201"
+     ],
+     "answer": 0,
+     "explain": "min_length=1 rejects the empty name during validation, before your function is called."
+    },
+    "6": {
+     "title": "Your mission: POST /parts",
+     "body": [
+      "Expose `app` with `POST /parts`. Validate that `name` is non-empty and `tolerance` is between 0 and 5 inclusive. On success return the validated `name` and `tolerance` with status **201**. Everything invalid (missing fields, empty name, tolerance 6 or -1) must be 422."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "True",
+      "False",
+      "5",
+      "None"
+     ],
+     "answer": 0,
+     "explanation": "Both range boundaries are inclusive.",
+     "code": "payload = {\"tolerance\": 5}\nv = payload[\"tolerance\"]\nvalid = 0 <= v <= 5\nprint(valid)"
+    },
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 fails with KeyError because tolerance is absent.",
+     "code": "payload = {}\ntolerance = payload[\"tolerance\"]\nprint(tolerance)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "/parts",
+    "tolerance"
+   ]
+  },
+  "2.3": {
+   "quest": "Implement store_inspection(db_path, name, strain). Create inspections(id INTEGER PRIMARY KEY, name TEXT, strain REAL) if needed, insert using parameters, commit, and return total row count. Persist across calls.",
+   "pages": {
+    "0": {
+     "title": "A database in a file",
+     "body": [
+      "**SQLite** is a full SQL database stored in a single file — built into Python, no server needed. Data survives after your program exits."
+     ],
+     "code": "import sqlite3\ncon = sqlite3.connect(\"site.db\")   # creates the file if needed"
+    },
+    "1": {
+     "title": "Tables define the schema",
+     "body": [
+      "A table is like a spreadsheet with fixed, typed columns. `CREATE TABLE IF NOT EXISTS` makes it only the first time.",
+      "`INTEGER PRIMARY KEY` gives each row an auto-numbered id."
+     ],
+     "code": "con.execute(\"\"\"\n    CREATE TABLE IF NOT EXISTS inspections (\n        id INTEGER PRIMARY KEY,\n        name TEXT,\n        strain REAL\n    )\n\"\"\")"
+    },
+    "2": {
+     "title": "Insert with ? placeholders",
+     "body": [
+      "Pass values separately using `?` placeholders. SQLite keeps data and instructions apart.",
+      "Building SQL with f-strings lets a malicious value like `x'); DROP TABLE inspections;--` become part of the command — that's **SQL injection**. The verification test tries exactly this."
+     ],
+     "code": "name, strain = \"Pier-1\", 3.3\ncon.execute(\"INSERT INTO inspections (name, strain) VALUES (?, ?)\",\n            (name, strain))"
+    },
+    "4": {
+     "title": "Reading back: SELECT",
+     "body": [
+      "`SELECT` queries rows. `fetchone()` returns one row as a tuple; `fetchall()` returns a list of them. `COUNT(*)` counts rows."
+     ],
+     "code": "count = con.execute(\"SELECT COUNT(*) FROM inspections\").fetchone()[0]\nprint(count)",
+     "output": "1"
+    },
+    "7": {
+     "title": "Your mission: store_inspection",
+     "body": [
+      "Write `store_inspection(db_path, name, strain)`. Create the `inspections(id INTEGER PRIMARY KEY, name TEXT, strain REAL)` table if needed, insert the row with placeholders, commit, and return the **total** number of rows. Calling it twice on the same file should return 1, then 2."
+     ]
+    }
+   },
+   "quiz": {
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 tries to modify an immutable tuple.",
+     "code": "row = (\"Pier-1\", 3.3)\nrow[0] = \"Pier-2\"\nprint(row)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "store_inspection",
+    "inspections"
+   ]
+  },
+  "2.4": {
+   "quest": "Implement async fetch_pressure(reader). Await reader() once and return {\"pressure\": value}. Convert TimeoutError to FastAPI HTTPException(status_code=503, detail=\"Gauge unavailable\"). Let other exceptions propagate.",
+   "pages": {
+    "0": {
+     "title": "Exceptions are warning flags",
+     "body": [
+      "When something goes wrong Python **raises** an exception that travels up until someone catches it. `try` / `except` catches it.",
+      "Catch only what you know how to handle. `except TimeoutError:` is precise; a bare `except:` swallows everything, including your own bugs."
+     ],
+     "code": "try:\n    value = int(\"abc\")\nexcept ValueError:\n    value = 0\nprint(value)",
+     "output": "0"
+    },
+    "1": {
+     "title": "Translate at the boundary",
+     "body": [
+      "Inside a web service, a low-level fault should become a meaningful HTTP response. FastAPI's `HTTPException` does that: raise it and FastAPI sends that status code and detail."
+     ],
+     "code": "from fastapi import HTTPException\n\nraise HTTPException(status_code=503, detail=\"Gauge unavailable\")",
+     "note": "503 means 'temporarily unavailable — try later'. It's the honest code when a dependency times out."
+    },
+    "3": {
+     "title": "async and await",
+     "body": [
+      "`async def` defines a **coroutine** — a function that can pause while waiting on slow I/O so other work can run. Inside it, `await` waits for another coroutine's result.",
+      "Calling an async function doesn't run it; it returns a coroutine object you must `await`."
+     ],
+     "code": "import asyncio\n\nasync def read_gauge():\n    await asyncio.sleep(0.1)    # pretend I/O\n    return 3.3\n\nasync def main():\n    v = await read_gauge()\n    print(v)\n\nasyncio.run(main())",
+     "output": "3.3"
+    },
+    "5": {
+     "title": "Putting it together",
+     "body": [
+      "Await the slow call inside `try`, translate the one error you understand, and let everything else propagate so real bugs stay visible."
+     ],
+     "code": "async def read_gauge(reader):\n    try:\n        return await reader()\n    except TimeoutError:\n        return {\"error\": \"timeout\"}"
+    },
+    "6": {
+     "title": "Your mission: fetch_pressure",
+     "body": [
+      "Write `async def fetch_pressure(reader)`. Await `reader()` **once** and return `{\"pressure\": value}`. If it raises `TimeoutError`, raise `HTTPException(status_code=503, detail=\"Gauge unavailable\")` instead. Any other exception should propagate unchanged."
+     ]
+    }
+   },
+   "quiz": {
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 cannot convert the word offline to a float.",
+     "code": "value = \"offline\"\npressure = float(value)\nprint(pressure)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "fetch_pressure",
+    "Gauge unavailable"
+   ]
+  },
+  "3.1": {
+   "pages": {
+    "0": {
+     "title": "Why split documents?",
+     "body": [
+      "AI retrieval works on small, searchable pieces called **chunks** rather than one huge document. A question then matches the few chunks that matter.",
+      "Like inspecting a long pipeline in overlapping sections: each section is small enough to examine on its own."
+     ]
+    }
+   }
+  },
+  "3.2": {
+   "pages": {
+    "4": {
+     "title": "Cosine similarity",
+     "body": [
+      "Divide the dot product by both norms: `dot(a, b) / (norm(a) * norm(b))`. The result depends only on direction.",
+      "`1` = same direction · `0` = perpendicular (unrelated) · `-1` = opposite. Scaling a vector doesn't change its score."
+     ],
+     "note": "Like comparing two load cases by the direction of their forces, ignoring how large each one is."
+    }
+   }
+  },
+  "3.3": {
+   "pages": {
+    "2": {
+     "title": "Adding entries: upsert",
+     "body": [
+      "Each entry has a string **id**, the **document** text and its **embedding**. `upsert` inserts new ids and overwrites existing ones, so running your code twice doesn't duplicate data."
+     ],
+     "code": "notes.upsert(\n    ids=[\"0\", \"1\"],\n    documents=[\"FEA predicts stress\", \"CAD models geometry\"],\n    embeddings=[[1.0, 0.0], [0.0, 1.0]],\n)",
+     "note": "Passing embeddings yourself means Chroma never downloads an embedding model."
+    },
+    "4": {
+     "title": "Querying",
+     "body": [
+      "`query` takes a **list** of query vectors and returns the nearest entries. Results are nested: one inner list per query."
+     ],
+     "code": "res = notes.query(query_embeddings=[[1.0, 0.0]], n_results=2)\nprint(res[\"documents\"])\nprint(res[\"documents\"][0])",
+     "output": "[['FEA predicts stress', 'CAD models geometry']]\n['FEA predicts stress', 'CAD models geometry']"
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "FEA",
+      "CAD",
+      "documents",
+      "0"
+     ],
+     "answer": 0,
+     "explanation": "One outer list represents the first query, then index zero selects its nearest result.",
+     "code": "result = {\"documents\": [[\"FEA\", \"CAD\"]]}\nfirst_query = result[\"documents\"][0]\nnearest = first_query[0]\nprint(nearest)"
+    },
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 asks for a second query result that does not exist.",
+     "code": "result = {\"documents\": [[\"FEA\"]]}\nsecond = result[\"documents\"][1]\nprint(second)"
+    }
+   }
+  },
+  "3.4": {
+   "pages": {
+    "1": {
+     "title": "A grounded prompt",
+     "body": [
+      "Label every source with an id so the model can cite it. Then give explicit rules: answer **only** from the sources, say when information is **insufficient**, and reply in **JSON**."
+     ],
+     "code": "sources = [{\"id\": \"s1\", \"text\": \"FEA divides a structure into many small elements.\"}]\ncontext = \"\\n\".join(f\"[{s['id']}] {s['text']}\" for s in sources)\nprint(context)",
+     "output": "[s1] FEA divides a structure into many small elements."
+    }
+   },
+   "quiz": {
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 raises KeyError because the response omitted citations.",
+     "code": "answer = {\"answer\": \"FEA\"}\ncitations = answer[\"citations\"]\nprint(citations)"
+    }
+   }
+  },
+  "4.1": {
+   "quest": "Implement dispatch(name,args). Only allow \"add\" with exactly numeric a,b (booleans rejected) and \"lookup\" with exactly string key. lookup uses {\"CAD\":\"computer-aided design\",\"FEA\":\"finite element analysis\"}, returning \"unknown\" for missing keys. Invalid tools/arguments → ValueError.",
+   "pages": {
+    "5": {
+     "title": "Lookups with defaults",
+     "body": [
+      "`dict.get(key, default)` returns the default for unknown keys — perfect for a glossary tool."
+     ],
+     "code": "GLOSSARY = {\"CAD\": \"computer-aided design\"}\nprint(GLOSSARY.get(\"CAD\", \"unknown\"))\nprint(GLOSSARY.get(\"XYZ\", \"unknown\"))",
+     "output": "computer-aided design\nunknown"
+    },
+    "6": {
+     "title": "Your mission: dispatch",
+     "body": [
+      "Write `dispatch(name, args)`. Allow only `add` (exactly numeric `a` and `b`, booleans rejected) and `lookup` (exactly a string `key`). `lookup` uses `{\"CAD\": \"computer-aided design\", \"FEA\": \"finite element analysis\"}` and returns `\"unknown\"` for missing keys. Anything else → `ValueError`."
+     ]
+    }
+   },
+   "variant": true,
+   "contract": [
+    "CAD",
+    "computer-aided design"
+   ]
+  },
+  "4.2": {
+   "title": "Agent Loop: Step Budgets",
+   "pages": {
+    "0": {
+     "title": "The agent loop",
+     "body": [
+      "An **agent** repeats a cycle: the model **decides** what to do → your code **acts** (runs a tool) → the result is **observed** and added to history → repeat until the model gives a final answer.",
+      "It's like a feedback control loop: each measurement adjusts the next action."
+     ]
+    },
+    "1": {
+     "title": "History is memory",
+     "body": [
+      "Each step appends a record so the next decision can see what happened."
+     ],
+     "code": "history = []\nhistory.append({\"tool\": \"lookup\", \"result\": \"computer-aided design\"})\nprint(history[-1][\"result\"])",
+     "output": "computer-aided design"
+    }
+   }
+  },
+  "4.4": {
+   "pages": {
+    "0": {
+     "title": "Images and containers",
+     "body": [
+      "A **Docker image** is a frozen, reproducible snapshot of an app and everything it needs. A **container** is a running instance of that image.",
+      "It's like a standard drawing package: issue it once and any workshop makes the same part."
+     ]
+    }
+   }
+  }
+ },
+ "gatekeepers": {
+  "1": {
+   "0": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "3.30 bar",
+     "3.3 bar",
+     "pressure bar",
+     "TypeError"
+    ],
+    "answer": 0,
+    "explanation": "An f-string evaluates pressure and :.2f displays exactly two decimal places.",
+    "code": "pressure = 3.3\nunit = \"bar\"\ntext = f\"{pressure:.2f} {unit}\"\nprint(text)"
+   },
+   "2": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "[1, 2]",
+     "[2, 3]",
+     "[3]",
+     "[1, 2, 3]"
+    ],
+    "answer": 1,
+    "explanation": "x >= 2 admits both 2 and 3. The comprehension preserves their order.",
+    "code": "loads = [1, 2, 3]\ncutoff = 2\nkept = [x for x in loads if x >= cutoff]\nprint(kept)"
+   },
+   "3": {
+    "kind": "Concept",
+    "prompt": "Why return a new filtered list?",
+    "options": [
+     "It sorts automatically",
+     "It changes every load to float",
+     "It avoids surprising changes to the caller’s data",
+     "It removes duplicates automatically"
+    ],
+    "answer": 2,
+    "explanation": "A function that does not mutate its input is easier to reuse and reason about. A filter need not sort or deduplicate.",
+    "code": ""
+   },
+   "4": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "A",
+     "7",
+     "id",
+     "KeyError"
+    ],
+    "answer": 0,
+    "explanation": "The first lookup selects the nested dictionary and the second selects its id.",
+    "code": "data = {\"bridge\": {\"id\": \"A\"}}\nbridge = data[\"bridge\"]\nlabel = bridge[\"id\"]\nprint(label)"
+   },
+   "8": {
+    "kind": "Integration",
+    "prompt": "A data logger sends JSON text. What is the correct sequence?",
+    "options": [
+     "Index text, then parse",
+     "Parse, validate shape, filter strains, serialize result",
+     "Print, delete, upload key",
+     "Serialize twice"
+    ],
+    "answer": 1,
+    "explanation": "Decode the transport format, validate its contract, perform the transformation, and encode the result.",
+    "code": ""
+   }
+  },
+  "2": {
+   "0": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "True",
+     "False",
+     "None",
+     "404"
+    ],
+    "answer": 0,
+    "explanation": "3.3 is greater than zero.",
+    "code": "payload = {\"pressure\": 3.3}\nvalue = payload[\"pressure\"]\nresult = value > 0\nprint(result)"
+   },
+   "1": {
+    "kind": "Concept",
+    "prompt": "Why use GET for reading a gauge?",
+    "options": [
+     "GET describes a read operation",
+     "GET encrypts requests",
+     "GET stores database rows",
+     "GET requires JSON bodies"
+    ],
+    "answer": 0,
+    "explanation": "HTTP methods communicate intent. GET is for retrieval.",
+    "code": ""
+   },
+   "2": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "True",
+     "False",
+     "5",
+     "None"
+    ],
+    "answer": 0,
+    "explanation": "Both range boundaries are inclusive.",
+    "code": "payload = {\"tolerance\": 5}\nv = payload[\"tolerance\"]\nvalid = 0 <= v <= 5\nprint(valid)"
+   }
+  },
+  "3": {
+   "4": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "FEA",
+     "CAD",
+     "documents",
+     "0"
+    ],
+    "answer": 0,
+    "explanation": "One outer list represents the first query, then index zero selects its nearest result.",
+    "code": "result = {\"documents\": [[\"FEA\", \"CAD\"]]}\nfirst_query = result[\"documents\"][0]\nnearest = first_query[0]\nprint(nearest)"
+   }
+  }
+ }
+}

@@ -263,8 +263,9 @@ def test_reference_solutions_pass(client,id,field):
     assert result['passed'],result['output']
 
 def test_field_overlays_are_valid():
-    assert {'biology','business'}<=set(game.FIELDS)
     options={o['value'] for q in game.PATHS['questions'] if q['id']=='field' for o in q['options']}
+    # Electronics is the original wording; every other field answer has examples of its own.
+    assert set(game.FIELDS)==options-{'ece'}
     for field,overlay in game.FIELDS.items():
         assert field in options
         for id,level in overlay['levels'].items():
@@ -295,10 +296,10 @@ def test_players_see_their_own_field(client):
     assert 'format_sample' in m['quest'] and m['title']=='Lab Notebook: Sample Labels' and m['path'].endswith('level_1_1_biology.py')
     assert 'concentration' in m['lesson_pages'][0]['code'] and 'mg/L' in m['lesson_pages'][6]['code']
     assert 'format_invoice' in (onboard(client,field='business'),mission(client,'1.1'))[1]['quest']
-    # A field without examples of its own, and electronics, keep the original missions.
-    for field in ('design','ece'):
-        s=onboard(client,field=field);assert not s['field_examples']
-        assert 'format_telemetry' in mission(client,'1.1')['quest'] and mission(client,'1.1')['path'].endswith('level_1_1.py')
+    assert 'format_layer' in (onboard(client,field='design'),mission(client,'1.1'))[1]['quest']
+    # Electronics keeps the original missions.
+    s=onboard(client,field='ece');assert not s['field_examples']
+    assert 'format_telemetry' in mission(client,'1.1')['quest'] and mission(client,'1.1')['path'].endswith('level_1_1.py')
 
 def test_field_quiz_and_checkpoint_questions(client):
     onboard(client,field='biology');learn(client,'1.1')

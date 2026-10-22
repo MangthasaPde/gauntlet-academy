@@ -1,0 +1,880 @@
+{
+ "levels": {
+  "1.1": {
+   "title": "Clock Sync: Server Status",
+   "quest": "Implement format_clock(host, offset_ms, synced). Return exactly \"<id> | <offset_ms to 2 decimals> ms | SYNCED\" (or DRIFTING when synced is False). Do not print instead of returning. Example: format_clock(\"web-1\", 3.3, True) → \"web-1 | 3.30 ms | SYNCED\". Accept negative and zero offsets (a clock can run behind as well as ahead).",
+   "hints": [
+    "Start with status = \"SYNCED\" if synced else \"DRIFTING\".",
+    "Use an f-string with {offset_ms:.2f}; spaces and punctuation are part of the contract."
+   ],
+   "pages": {
+    "0": {
+     "title": "Variables are labels",
+     "body": [
+      "A **variable** is a name attached to a value — like a named entry in a config file. You create one with `=`.",
+      "Once a name exists you can reuse it anywhere below that line. Python reads your file from top to bottom."
+     ],
+     "code": "offset_ms = 3.3\nhost = \"web-1\"\nsynced = True\nprint(host, offset_ms, synced)",
+     "output": "web-1 3.3 True",
+     "note": "`=` stores a value. `==` asks a question (\"are these equal?\"). Mixing them up is the most common beginner bug."
+    },
+    "1": {
+     "title": "Four basic types",
+     "body": [
+      "Every value has a **type**. You will use these four constantly:",
+      "`int` — whole numbers like `42`. `float` — decimals like `3.3`. `str` — text in quotes like `\"web-1\"`. `bool` — `True` or `False`.",
+      "Quotes matter: `\"3.3\"` is text, `3.3` is a number. `type(x)` tells you what you have."
+     ],
+     "code": "print(type(42))\nprint(type(3.3))\nprint(type(\"3.3\"))\nprint(type(True))",
+     "output": "<class 'int'>\n<class 'float'>\n<class 'str'>\n<class 'bool'>"
+    },
+    "3": {
+     "title": "Functions are reusable commands",
+     "body": [
+      "A **function** packages a piece of logic so you can reuse it. Parameters are the arguments you pass in; `return` is the result the command hands back.",
+      "The body is everything indented by four spaces under the `def` line. The function does nothing until you **call** it with parentheses."
+     ],
+     "code": "def double(x):\n    result = x * 2\n    return result\n\nprint(double(21))",
+     "output": "42"
+    },
+    "6": {
+     "title": "Formatting numbers with f-strings",
+     "body": [
+      "Put `f` before a string and you can drop values into it with `{}`.",
+      "After a colon you can add a **format spec**. `:.2f` means \"show as a float with exactly 2 decimal places\" — it rounds the display and leaves the original value alone."
+     ],
+     "code": "offset_ms = 3.14159\nprint(f\"Offset = {offset_ms:.2f} ms\")\nprint(f\"Offset = {0:.2f} ms\")\nprint(offset_ms)",
+     "output": "Offset = 3.14 ms\nOffset = 0.00 ms\n3.14159"
+    },
+    "7": {
+     "title": "Picking between two values",
+     "body": [
+      "A **conditional expression** chooses one of two values in a single line: `A if condition else B`.",
+      "It is perfect for turning a bool into a label."
+     ],
+     "code": "synced = False\nstatus = \"SYNCED\" if synced else \"DRIFTING\"\nprint(status)",
+     "output": "DRIFTING"
+    },
+    "8": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "2.50 ms",
+      "2.5 ms",
+      "2.500 ms",
+      "{v:.2f} ms"
+     ],
+     "answer": 0,
+     "explain": ":.2f always shows exactly two decimals, padding with zeros when needed.",
+     "code": "v = 2.5\nprint(f\"{v:.2f} ms\")"
+    },
+    "9": {
+     "title": "Your mission: format_clock",
+     "body": [
+      "You will write `format_clock(host, offset_ms, synced)` and **return** one line of text. The exact shape is `<id> | <offset_ms with 2 decimals> ms | SYNCED` — or `DRIFTING` when `synced` is False. Every space and `|` counts.",
+      "Examples the tests will check: `format_clock(\"web-1\", 3.3, True)` → `\"web-1 | 3.30 ms | SYNCED\"` and `format_clock(\"db\", 0, False)` → `\"db | 0.00 ms | DRIFTING\"`. Negative values work the same way."
+     ],
+     "note": "Next: a 3-question quiz on these ideas. Pass it and the Build step unlocks."
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "3.30 ms",
+      "3.3 ms",
+      "offset_ms ms",
+      "TypeError"
+     ],
+     "answer": 0,
+     "explanation": "An f-string evaluates offset_ms and :.2f displays exactly two decimal places.",
+     "code": "offset_ms = 3.3\nunit = \"ms\"\ntext = f\"{offset_ms:.2f} {unit}\"\nprint(text)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "format_clock"
+   ]
+  },
+  "1.2": {
+   "title": "Latency Filter: Loops & Lists",
+   "quest": "Implement filter_latencies(latencies, low, high). Return a new list containing latencies in the inclusive [low, high] range, in original order. Never mutate latencies. Raise ValueError when low > high.",
+   "hints": [
+    "Check low > high before the loop, even when latencies is empty.",
+    "Create result = []; append only latencies satisfying low <= latency <= high."
+   ],
+   "pages": {
+    "0": {
+     "title": "Lists hold latencies in order",
+     "body": [
+      "A **list** is an ordered sequence of measurements: `[10, 20, 30]`. Each item has an index, and indexing starts at **0**.",
+      "Negative indexes count from the end: `-1` is the last item. `len(latencies)` gives the item count."
+     ],
+     "code": "latencies = [10, 20, 30]\nprint(latencies[0])\nprint(latencies[-1])\nprint(len(latencies))",
+     "output": "10\n30\n3"
+    },
+    "1": {
+     "title": "for loops visit each item",
+     "body": [
+      "A `for` loop runs its indented body once per item, binding the item to a name you choose."
+     ],
+     "code": "for latency in [3, 7, 1]:\n    print(latency * 10)",
+     "output": "30\n70\n10"
+    },
+    "2": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "7",
+      "5",
+      "6",
+      "IndexError"
+     ],
+     "answer": 0,
+     "explain": "-1 refers to the last item in the list.",
+     "code": "latencies = [5, 6, 7]\nprint(latencies[-1])"
+    },
+    "3": {
+     "title": "Conditions decide what passes",
+     "body": [
+      "`if` runs its body only when the condition is True. Comparisons like `<`, `<=`, `==` produce bools.",
+      "Python lets you **chain** comparisons: `low <= x <= high` means \"x is between low and high, including both ends\" — like the healthy band on a monitoring dashboard."
+     ],
+     "code": "low, high = 0, 5\nfor x in [-1, 0, 3, 5, 9]:\n    if low <= x <= high:\n        print(x, \"passes\")",
+     "output": "0 passes\n3 passes\n5 passes"
+    },
+    "4": {
+     "title": "Build a new list, keep the input intact",
+     "body": [
+      "To filter, start with an empty list and `append` what you want to keep. The caller's original list stays unchanged.",
+      "Never delete items from a list while looping over it — the loop skips elements and the caller gets a surprise."
+     ],
+     "code": "def positive(latencies):\n    result = []\n    for s in latencies:\n        if s > 0:\n            result.append(s)\n    return result\n\ndata = [-2, 4, 0, 7]\nprint(positive(data))\nprint(data)",
+     "output": "[4, 7]\n[-2, 4, 0, 7]"
+    },
+    "6": {
+     "title": "The compact version: comprehensions",
+     "body": [
+      "A **list comprehension** expresses the same filter in one line: `[x for x in latencies if condition]`.",
+      "Write the loop version first if it helps you think — both are correct."
+     ],
+     "code": "latencies = [1, 2, 3, 4]\nevens = [x for x in latencies if x % 2 == 0]\nprint(evens)",
+     "output": "[2, 4]"
+    },
+    "8": {
+     "title": "Your mission: filter_latencies",
+     "body": [
+      "Write `filter_latencies(latencies, low, high)` returning a **new** list of latencies where `low <= latency <= high`, in the original order. Don't modify `latencies`. If `low > high`, raise `ValueError`. Example: `filter_latencies([-3, 0, 2, 5, 8], 0, 5)` → `[0, 2, 5]`. An empty input returns `[]`."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "[1, 2]",
+      "[2, 3]",
+      "[3]",
+      "[1, 2, 3]"
+     ],
+     "answer": 1,
+     "explanation": "x >= 2 admits both 2 and 3. The comprehension preserves their order.",
+     "code": "latencies = [1, 2, 3]\ncutoff = 2\nkept = [x for x in latencies if x >= cutoff]\nprint(kept)"
+    },
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1: bad list",
+      "Line 2: list index out of range",
+      "Line 3: printing is forbidden",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "A two-element list has indices 0 and 1. Index 2 is outside it.",
+     "code": "latencies = [10, 20]\nlast = latencies[2]\nprint(last)"
+    },
+    "2": {
+     "kind": "Concept",
+     "prompt": "Why return a new filtered list?",
+     "options": [
+      "It sorts automatically",
+      "It changes every latency to float",
+      "It avoids surprising changes to the caller’s data",
+      "It removes duplicates automatically"
+     ],
+     "answer": 2,
+     "explanation": "A function that does not mutate its input is easier to reuse and reason about. A filter need not sort or deduplicate.",
+     "code": ""
+    }
+   },
+   "variant": true,
+   "contract": [
+    "filter_latencies"
+   ]
+  },
+  "1.3": {
+   "title": "Log Parser: Dictionaries & JSON",
+   "quest": "Implement restructure_log(raw_json). Input shape: {\"server\":{\"id\":\"A\"},\"requests\":[{\"latency\":3.0},{\"latency\":5.0}]}. Return {\"server_id\":\"A\",\"latencies\":[3.0,5.0],\"average_latency\":4.0}. Empty requests → average_latency = None. Invalid JSON, missing/wrong-shaped fields, empty ID, or nonnumeric/boolean latency must raise ValueError. Ignore unrelated extra fields.",
+   "hints": [
+    "Wrap parsing and shape checks so malformed input consistently raises ValueError.",
+    "Build latencies first; sum(latencies) / len(latencies) only when the list is nonempty."
+   ],
+   "pages": {
+    "0": {
+     "title": "Dictionaries map names to values",
+     "body": [
+      "A **dict** stores key → value pairs, like a config file with a named setting on each line. Look a value up with `d[key]`.",
+      "A missing key raises `KeyError`. `d.get(key, default)` returns the default instead."
+     ],
+     "code": "reading = {\"id\": \"web-1\", \"offset_ms\": 3.3}\nprint(reading[\"offset_ms\"])\nprint(reading.get(\"unit\", \"ms\"))",
+     "output": "3.3\nms"
+    },
+    "1": {
+     "title": "Nesting: dicts inside dicts, lists of dicts",
+     "body": [
+      "Real data nests. Chain lookups to drill down, and loop over lists of dicts."
+     ],
+     "code": "data = {\n    \"server\": {\"id\": \"A\"},\n    \"requests\": [{\"latency\": 3.0}, {\"latency\": 5.0}],\n}\nprint(data[\"server\"][\"id\"])\nfor r in data[\"requests\"]:\n    print(r[\"latency\"])",
+     "output": "A\n3.0\n5.0"
+    },
+    "2": {
+     "type": "check",
+     "prompt": "What does this print?",
+     "options": [
+      "A",
+      "{'id': 'A'}",
+      "server",
+      "KeyError"
+     ],
+     "answer": 0,
+     "explain": "data['server'] gives the inner dict; ['id'] then reads 'A' from it.",
+     "code": "data = {\"server\": {\"id\": \"A\"}}\nprint(data[\"server\"][\"id\"])"
+    },
+    "9": {
+     "title": "Your mission: restructure_log",
+     "body": [
+      "Write `restructure_log(raw_json)`. It receives JSON **text**, e.g. `{\"server\":{\"id\":\"A\"},\"requests\":[{\"latency\":3.0},{\"latency\":5.0}]}`. Return `{\"server_id\": \"A\", \"latencies\": [3.0, 5.0], \"average_latency\": 4.0}`.",
+      "With no requests, `average_latency` is `None`. Raise `ValueError` for invalid JSON, missing or wrong-shaped fields, an empty ID, or non-numeric / boolean values. Ignore extra fields."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "A",
+      "7",
+      "id",
+      "KeyError"
+     ],
+     "answer": 0,
+     "explanation": "The first lookup selects the nested dictionary and the second selects its id.",
+     "code": "data = {\"server\": {\"id\": \"A\"}}\nserver = data[\"server\"]\nlabel = server[\"id\"]\nprint(label)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "restructure_log"
+   ]
+  },
+  "1.4": {
+   "pages": {
+    "0": {
+     "title": "Virtual environments",
+     "body": [
+      "A **virtual environment** (`.venv`) is a separate sandbox for one project: its own Python packages, isolated from every other project.",
+      "The game's launcher already created one and installed everything. To use it in your own terminal, activate it first."
+     ],
+     "code": "cd gauntlet-academy\nsource .venv/bin/activate\npython --version"
+    },
+    "4": {
+     "title": "Calling Gemini",
+     "body": [
+      "The `google-genai` SDK gives you a client object. You ask it to generate content for a model and read `.text` from the response."
+     ],
+     "code": "from google import genai\n\nclient = genai.Client(api_key=key)\nresponse = client.models.generate_content(\n    model=model, contents=\"Explain DNS in one line\")\nprint(response.text)",
+     "note": "Only create a client inside a function — never at import time — so importing your file never touches the network."
+    },
+    "5": {
+     "title": "Dependency injection: plug in a test fixture",
+     "body": [
+      "If your function builds its own client, tests can't avoid the network. Instead accept an optional `client` parameter. Real use passes nothing; tests pass a fake with the same shape.",
+      "It's like testing against a mock server: swap the fake in and you can check the whole flow offline, for free."
+     ],
+     "code": "class FakeModels:\n    def generate_content(self, model, contents):\n        class R: text = \"fake reply\"\n        return R()\n\nclass FakeClient:\n    models = FakeModels()\n\ndef ask(prompt, client=None):\n    if client is None:\n        client = build_real_client()   # only when nothing was injected\n    return client.models.generate_content(model=\"m\", contents=prompt).text\n\nprint(ask(\"hi\", client=FakeClient()))",
+     "output": "fake reply"
+    }
+   }
+  },
+  "2.1": {
+   "quest": "Expose app, a FastAPI instance, with GET /server/{server_id}. Return {\"id\":server_id,\"latency\":3.3}. The ID is a string.",
+   "pages": {
+    "0": {
+     "title": "HTTP in one page",
+     "body": [
+      "Web services talk with **HTTP**. A client sends a **request** (a method such as `GET`, plus a path like `/server/7`); the server sends back a **response** (a status code plus a body, usually JSON).",
+      "Think of it as a remote call with a standard envelope: every request names an action (method), a resource (path) and may carry data (body)."
+     ],
+     "code": "GET /server/web-1          ← request\n200 OK                     ← response status\n{\"id\": \"web-1\", \"latency\": 3.3}   ← response body"
+    },
+    "5": {
+     "type": "check",
+     "prompt": "With the route `/server/{server_id}`, a request to `/server/web-1` sets `server_id` to…",
+     "options": [
+      "\"web-1\"",
+      "7",
+      "\"/server/web-1\"",
+      "None"
+     ],
+     "answer": 0,
+     "explain": "The captured segment is passed as-is; with a str annotation it stays the string \"web-1\"."
+    },
+    "7": {
+     "title": "Your mission: a GET endpoint",
+     "body": [
+      "Your file already creates `app = FastAPI()`. Register `GET /server/{server_id}` that returns `{\"id\": server_id, \"latency\": 3.3}`. Keep the ID a string. Unknown paths return 404 automatically."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "True",
+      "False",
+      "None",
+      "404"
+     ],
+     "answer": 0,
+     "explanation": "3.3 is greater than zero.",
+     "code": "payload = {\"latency\": 3.3}\nvalue = payload[\"latency\"]\nresult = value > 0\nprint(result)"
+    },
+    "2": {
+     "kind": "Concept",
+     "prompt": "Why use GET for reading a server status?",
+     "options": [
+      "GET describes a read operation",
+      "GET encrypts requests",
+      "GET stores database rows",
+      "GET requires JSON bodies"
+     ],
+     "answer": 0,
+     "explanation": "HTTP methods communicate intent. GET is for retrieval.",
+     "code": ""
+    }
+   },
+   "variant": true,
+   "contract": [
+    "/server/{server_id}",
+    "latency"
+   ]
+  },
+  "2.2": {
+   "quest": "Expose FastAPI app and POST /servers. Validate name is nonempty and cpu is between 0 and 100 inclusive. Return the validated name and cpu with HTTP 201.",
+   "pages": {
+    "0": {
+     "title": "POST sends a body",
+     "body": [
+      "`GET` reads. `POST` sends data in the request **body**, usually JSON, for the server to process or store."
+     ],
+     "code": "POST /servers\n{\"name\": \"A\", \"cpu\": 42}"
+    },
+    "1": {
+     "title": "Pydantic: a type check at the door",
+     "body": [
+      "A **Pydantic model** declares the fields you expect and their types. Data that doesn't fit is rejected before your code runs — like an API gateway that rejects a request with a missing field."
+     ],
+     "code": "from pydantic import BaseModel\n\nclass Server(BaseModel):\n    name: str\n    cpu: float\n\ns = Server(name=\"A\", cpu=42)\nprint(s.cpu)",
+     "output": "42.0"
+    },
+    "2": {
+     "title": "Constraints with Field",
+     "body": [
+      "`Field` adds rules: `min_length=1` rejects empty text; `ge` / `le` mean greater-or-equal / less-or-equal (inclusive bounds)."
+     ],
+     "code": "from pydantic import BaseModel, Field\n\nclass Server(BaseModel):\n    name: str = Field(min_length=1)\n    cpu: float = Field(ge=0, le=100)"
+    },
+    "3": {
+     "type": "check",
+     "prompt": "With `cpu: float = Field(ge=0, le=100)`, is `cpu=100` accepted?",
+     "options": [
+      "Yes — le means ≤, so 100 is allowed",
+      "No — 100 is outside the range",
+      "Only if it's written 100.0",
+      "Pydantic ignores numbers"
+     ],
+     "answer": 0,
+     "explain": "ge and le are inclusive. gt and lt would be exclusive."
+    },
+    "4": {
+     "title": "Models as route inputs",
+     "body": [
+      "Use the model as a parameter type and FastAPI reads the JSON body into it. Invalid bodies get an automatic **422** response — your function never runs."
+     ],
+     "code": "@app.post(\"/servers\", status_code=201)\ndef create(server: Server):\n    return server",
+     "note": "status_code=201 (Created) in the decorator changes the success code from the default 200."
+    },
+    "5": {
+     "type": "check",
+     "prompt": "A client POSTs `{\"name\": \"\", \"cpu\": 42}`. What happens?",
+     "options": [
+      "FastAPI returns 422 automatically",
+      "The function runs with an empty name",
+      "The server crashes with 500",
+      "It returns 201"
+     ],
+     "answer": 0,
+     "explain": "min_length=1 rejects the empty name during validation, before your function is called."
+    },
+    "6": {
+     "title": "Your mission: POST /servers",
+     "body": [
+      "Expose `app` with `POST /servers`. Validate that `name` is non-empty and `cpu` is between 0 and 100 inclusive. On success return the validated `name` and `cpu` with status **201**. Everything invalid (missing fields, empty name, cpu 101 or -1) must be 422."
+     ]
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "True",
+      "False",
+      "5",
+      "None"
+     ],
+     "answer": 0,
+     "explanation": "Both range boundaries are inclusive.",
+     "code": "payload = {\"cpu\": 100}\nv = payload[\"cpu\"]\nvalid = 0 <= v <= 100\nprint(valid)"
+    },
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 fails with KeyError because cpu is absent.",
+     "code": "payload = {}\ncpu = payload[\"cpu\"]\nprint(cpu)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "/servers",
+    "cpu"
+   ]
+  },
+  "2.3": {
+   "quest": "Implement store_event(db_path, name, duration). Create events(id INTEGER PRIMARY KEY, name TEXT, duration REAL) if needed, insert using parameters, commit, and return total row count. Persist across calls.",
+   "pages": {
+    "0": {
+     "title": "A database in a file",
+     "body": [
+      "**SQLite** is a full SQL database stored in a single file — built into Python, no server needed. Data survives after your program exits."
+     ],
+     "code": "import sqlite3\ncon = sqlite3.connect(\"ops.db\")   # creates the file if needed"
+    },
+    "1": {
+     "title": "Tables define the schema",
+     "body": [
+      "A table is like a spreadsheet with fixed, typed columns. `CREATE TABLE IF NOT EXISTS` makes it only the first time.",
+      "`INTEGER PRIMARY KEY` gives each row an auto-numbered id."
+     ],
+     "code": "con.execute(\"\"\"\n    CREATE TABLE IF NOT EXISTS events (\n        id INTEGER PRIMARY KEY,\n        name TEXT,\n        duration REAL\n    )\n\"\"\")"
+    },
+    "2": {
+     "title": "Insert with ? placeholders",
+     "body": [
+      "Pass values separately using `?` placeholders. SQLite keeps data and instructions apart.",
+      "Building SQL with f-strings lets a malicious value like `x'); DROP TABLE events;--` become part of the command — that's **SQL injection**. The verification test tries exactly this."
+     ],
+     "code": "name, duration = \"deploy\", 3.3\ncon.execute(\"INSERT INTO events (name, duration) VALUES (?, ?)\",\n            (name, duration))"
+    },
+    "4": {
+     "title": "Reading back: SELECT",
+     "body": [
+      "`SELECT` queries rows. `fetchone()` returns one row as a tuple; `fetchall()` returns a list of them. `COUNT(*)` counts rows."
+     ],
+     "code": "count = con.execute(\"SELECT COUNT(*) FROM events\").fetchone()[0]\nprint(count)",
+     "output": "1"
+    },
+    "7": {
+     "title": "Your mission: store_event",
+     "body": [
+      "Write `store_event(db_path, name, duration)`. Create the `events(id INTEGER PRIMARY KEY, name TEXT, duration REAL)` table if needed, insert the row with placeholders, commit, and return the **total** number of rows. Calling it twice on the same file should return 1, then 2."
+     ]
+    }
+   },
+   "quiz": {
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 tries to modify an immutable tuple.",
+     "code": "row = (\"deploy\", 3.3)\nrow[0] = \"rollback\"\nprint(row)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "store_event",
+    "events"
+   ]
+  },
+  "2.4": {
+   "quest": "Implement async fetch_latency(reader). Await reader() once and return {\"latency\": value}. Convert TimeoutError to FastAPI HTTPException(status_code=503, detail=\"Monitor unavailable\"). Let other exceptions propagate.",
+   "pages": {
+    "0": {
+     "title": "Exceptions are warning flags",
+     "body": [
+      "When something goes wrong Python **raises** an exception that travels up until someone catches it. `try` / `except` catches it.",
+      "Catch only what you know how to handle. `except TimeoutError:` is precise; a bare `except:` swallows everything, including your own bugs."
+     ],
+     "code": "try:\n    value = int(\"abc\")\nexcept ValueError:\n    value = 0\nprint(value)",
+     "output": "0"
+    },
+    "1": {
+     "title": "Translate at the boundary",
+     "body": [
+      "Inside a web service, a low-level fault should become a meaningful HTTP response. FastAPI's `HTTPException` does that: raise it and FastAPI sends that status code and detail."
+     ],
+     "code": "from fastapi import HTTPException\n\nraise HTTPException(status_code=503, detail=\"Monitor unavailable\")",
+     "note": "503 means 'temporarily unavailable — try later'. It's the honest code when a dependency times out."
+    },
+    "3": {
+     "title": "async and await",
+     "body": [
+      "`async def` defines a **coroutine** — a function that can pause while waiting on slow I/O so other work can run. Inside it, `await` waits for another coroutine's result.",
+      "Calling an async function doesn't run it; it returns a coroutine object you must `await`."
+     ],
+     "code": "import asyncio\n\nasync def read_monitor():\n    await asyncio.sleep(0.1)    # pretend I/O\n    return 3.3\n\nasync def main():\n    v = await read_monitor()\n    print(v)\n\nasyncio.run(main())",
+     "output": "3.3"
+    },
+    "5": {
+     "title": "Putting it together",
+     "body": [
+      "Await the slow call inside `try`, translate the one error you understand, and let everything else propagate so real bugs stay visible."
+     ],
+     "code": "async def read_monitor(reader):\n    try:\n        return await reader()\n    except TimeoutError:\n        return {\"error\": \"timeout\"}"
+    },
+    "6": {
+     "title": "Your mission: fetch_latency",
+     "body": [
+      "Write `async def fetch_latency(reader)`. Await `reader()` **once** and return `{\"latency\": value}`. If it raises `TimeoutError`, raise `HTTPException(status_code=503, detail=\"Monitor unavailable\")` instead. Any other exception should propagate unchanged."
+     ]
+    }
+   },
+   "quiz": {
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 cannot convert the word offline to a float.",
+     "code": "value = \"offline\"\nlatency = float(value)\nprint(latency)"
+    }
+   },
+   "variant": true,
+   "contract": [
+    "fetch_latency",
+    "Monitor unavailable"
+   ]
+  },
+  "3.1": {
+   "pages": {
+    "0": {
+     "title": "Why split documents?",
+     "body": [
+      "AI retrieval works on small, searchable pieces called **chunks** rather than one huge document. A question then matches the few chunks that matter.",
+      "Like paging through a huge log file in overlapping blocks: each block is small enough to search on its own."
+     ]
+    }
+   }
+  },
+  "3.2": {
+   "pages": {
+    "4": {
+     "title": "Cosine similarity",
+     "body": [
+      "Divide the dot product by both norms: `dot(a, b) / (norm(a) * norm(b))`. The result depends only on direction.",
+      "`1` = same direction · `0` = perpendicular (unrelated) · `-1` = opposite. Scaling a vector doesn't change its score."
+     ],
+     "note": "Like comparing two users' interest profiles by direction, ignoring how active each one is overall."
+    }
+   }
+  },
+  "3.3": {
+   "pages": {
+    "2": {
+     "title": "Adding entries: upsert",
+     "body": [
+      "Each entry has a string **id**, the **document** text and its **embedding**. `upsert` inserts new ids and overwrites existing ones, so running your code twice doesn't duplicate data."
+     ],
+     "code": "notes.upsert(\n    ids=[\"0\", \"1\"],\n    documents=[\"DNS resolves names\", \"TCP retransmits packets\"],\n    embeddings=[[1.0, 0.0], [0.0, 1.0]],\n)",
+     "note": "Passing embeddings yourself means Chroma never downloads an embedding model."
+    },
+    "4": {
+     "title": "Querying",
+     "body": [
+      "`query` takes a **list** of query vectors and returns the nearest entries. Results are nested: one inner list per query."
+     ],
+     "code": "res = notes.query(query_embeddings=[[1.0, 0.0]], n_results=2)\nprint(res[\"documents\"])\nprint(res[\"documents\"][0])",
+     "output": "[['DNS resolves names', 'TCP retransmits packets']]\n['DNS resolves names', 'TCP retransmits packets']"
+    }
+   },
+   "quiz": {
+    "0": {
+     "kind": "Predict the Output",
+     "prompt": "What is printed?",
+     "options": [
+      "DNS",
+      "TCP",
+      "documents",
+      "0"
+     ],
+     "answer": 0,
+     "explanation": "One outer list represents the first query, then index zero selects its nearest result.",
+     "code": "result = {\"documents\": [[\"DNS\", \"TCP\"]]}\nfirst_query = result[\"documents\"][0]\nnearest = first_query[0]\nprint(nearest)"
+    },
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 asks for a second query result that does not exist.",
+     "code": "result = {\"documents\": [[\"DNS\"]]}\nsecond = result[\"documents\"][1]\nprint(second)"
+    }
+   }
+  },
+  "3.4": {
+   "pages": {
+    "1": {
+     "title": "A grounded prompt",
+     "body": [
+      "Label every source with an id so the model can cite it. Then give explicit rules: answer **only** from the sources, say when information is **insufficient**, and reply in **JSON**."
+     ],
+     "code": "sources = [{\"id\": \"s1\", \"text\": \"DNS translates domain names into IP addresses.\"}]\ncontext = \"\\n\".join(f\"[{s['id']}] {s['text']}\" for s in sources)\nprint(context)",
+     "output": "[s1] DNS translates domain names into IP addresses."
+    }
+   },
+   "quiz": {
+    "1": {
+     "kind": "Spot the Bug",
+     "prompt": "Which line fails?",
+     "options": [
+      "Line 1",
+      "Line 2",
+      "Line 3",
+      "No error"
+     ],
+     "answer": 1,
+     "explanation": "Line 2 raises KeyError because the response omitted citations.",
+     "code": "answer = {\"answer\": \"DNS\"}\ncitations = answer[\"citations\"]\nprint(citations)"
+    }
+   }
+  },
+  "4.1": {
+   "quest": "Implement dispatch(name,args). Only allow \"add\" with exactly numeric a,b (booleans rejected) and \"lookup\" with exactly string key. lookup uses {\"CPU\":\"central processing unit\",\"RAM\":\"random-access memory\"}, returning \"unknown\" for missing keys. Invalid tools/arguments → ValueError.",
+   "pages": {
+    "5": {
+     "title": "Lookups with defaults",
+     "body": [
+      "`dict.get(key, default)` returns the default for unknown keys — perfect for a glossary tool."
+     ],
+     "code": "GLOSSARY = {\"CPU\": \"central processing unit\"}\nprint(GLOSSARY.get(\"CPU\", \"unknown\"))\nprint(GLOSSARY.get(\"XYZ\", \"unknown\"))",
+     "output": "central processing unit\nunknown"
+    },
+    "6": {
+     "title": "Your mission: dispatch",
+     "body": [
+      "Write `dispatch(name, args)`. Allow only `add` (exactly numeric `a` and `b`, booleans rejected) and `lookup` (exactly a string `key`). `lookup` uses `{\"CPU\": \"central processing unit\", \"RAM\": \"random-access memory\"}` and returns `\"unknown\"` for missing keys. Anything else → `ValueError`."
+     ]
+    }
+   },
+   "variant": true,
+   "contract": [
+    "CPU",
+    "central processing unit"
+   ]
+  },
+  "4.2": {
+   "title": "Agent Loop: Step Budgets",
+   "pages": {
+    "0": {
+     "title": "The agent loop",
+     "body": [
+      "An **agent** repeats a cycle: the model **decides** what to do → your code **acts** (runs a tool) → the result is **observed** and added to history → repeat until the model gives a final answer.",
+      "It's like an event loop: each result feeds the next decision."
+     ]
+    },
+    "1": {
+     "title": "History is memory",
+     "body": [
+      "Each step appends a record so the next decision can see what happened."
+     ],
+     "code": "history = []\nhistory.append({\"tool\": \"lookup\", \"result\": \"central processing unit\"})\nprint(history[-1][\"result\"])",
+     "output": "central processing unit"
+    }
+   }
+  },
+  "4.4": {
+   "pages": {
+    "0": {
+     "title": "Images and containers",
+     "body": [
+      "A **Docker image** is a frozen, reproducible snapshot of an app and everything it needs. A **container** is a running instance of that image.",
+      "It's like a build artifact: build once, deploy anywhere, same behaviour."
+     ]
+    }
+   }
+  }
+ },
+ "gatekeepers": {
+  "1": {
+   "0": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "3.30 ms",
+     "3.3 ms",
+     "offset_ms ms",
+     "TypeError"
+    ],
+    "answer": 0,
+    "explanation": "An f-string evaluates offset_ms and :.2f displays exactly two decimal places.",
+    "code": "offset_ms = 3.3\nunit = \"ms\"\ntext = f\"{offset_ms:.2f} {unit}\"\nprint(text)"
+   },
+   "2": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "[1, 2]",
+     "[2, 3]",
+     "[3]",
+     "[1, 2, 3]"
+    ],
+    "answer": 1,
+    "explanation": "x >= 2 admits both 2 and 3. The comprehension preserves their order.",
+    "code": "latencies = [1, 2, 3]\ncutoff = 2\nkept = [x for x in latencies if x >= cutoff]\nprint(kept)"
+   },
+   "3": {
+    "kind": "Concept",
+    "prompt": "Why return a new filtered list?",
+    "options": [
+     "It sorts automatically",
+     "It changes every latency to float",
+     "It avoids surprising changes to the caller’s data",
+     "It removes duplicates automatically"
+    ],
+    "answer": 2,
+    "explanation": "A function that does not mutate its input is easier to reuse and reason about. A filter need not sort or deduplicate.",
+    "code": ""
+   },
+   "4": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "A",
+     "7",
+     "id",
+     "KeyError"
+    ],
+    "answer": 0,
+    "explanation": "The first lookup selects the nested dictionary and the second selects its id.",
+    "code": "data = {\"server\": {\"id\": \"A\"}}\nserver = data[\"server\"]\nlabel = server[\"id\"]\nprint(label)"
+   },
+   "8": {
+    "kind": "Integration",
+    "prompt": "A server sends JSON text. What is the correct sequence?",
+    "options": [
+     "Index text, then parse",
+     "Parse, validate shape, filter requests, serialize result",
+     "Print, delete, upload key",
+     "Serialize twice"
+    ],
+    "answer": 1,
+    "explanation": "Decode the transport format, validate its contract, perform the transformation, and encode the result.",
+    "code": ""
+   }
+  },
+  "2": {
+   "0": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "True",
+     "False",
+     "None",
+     "404"
+    ],
+    "answer": 0,
+    "explanation": "3.3 is greater than zero.",
+    "code": "payload = {\"latency\": 3.3}\nvalue = payload[\"latency\"]\nresult = value > 0\nprint(result)"
+   },
+   "1": {
+    "kind": "Concept",
+    "prompt": "Why use GET for reading a server status?",
+    "options": [
+     "GET describes a read operation",
+     "GET encrypts requests",
+     "GET stores database rows",
+     "GET requires JSON bodies"
+    ],
+    "answer": 0,
+    "explanation": "HTTP methods communicate intent. GET is for retrieval.",
+    "code": ""
+   },
+   "2": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "True",
+     "False",
+     "5",
+     "None"
+    ],
+    "answer": 0,
+    "explanation": "Both range boundaries are inclusive.",
+    "code": "payload = {\"cpu\": 100}\nv = payload[\"cpu\"]\nvalid = 0 <= v <= 100\nprint(valid)"
+   }
+  },
+  "3": {
+   "4": {
+    "kind": "Predict the Output",
+    "prompt": "What is printed?",
+    "options": [
+     "DNS",
+     "TCP",
+     "documents",
+     "0"
+    ],
+    "answer": 0,
+    "explanation": "One outer list represents the first query, then index zero selects its nearest result.",
+    "code": "result = {\"documents\": [[\"DNS\", \"TCP\"]]}\nfirst_query = result[\"documents\"][0]\nnearest = first_query[0]\nprint(nearest)"
+   }
+  }
+ }
+}

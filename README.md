@@ -36,20 +36,20 @@ On first launch the game asks five questions (field, coding experience, goal, ho
 
 ### Examples from your field
 
-The setup asks for your field. **Biology / life sciences** and **Business / finance** players get Rooms 1 to 4 in their own words: mission titles, lesson pages, quiz and checkpoint questions, and analogies. Where the original mission is tied to electronics, they get a different task with its own function names, starter file and tests, so nobody writes voltage code for a shop:
+The setup asks for your field, and Rooms 1 to 4 then speak it: mission titles, lesson pages, analogies, quiz and checkpoint questions. Where the original mission is tied to electronics (missions 1.1, 1.2, 1.3, 2.1 to 2.4 and 4.1), each field gets a task of its own, with its own function names, starter file and tests, so nobody writes voltage code for a shop:
 
-| Mission | Electronics | Biology | Business |
-|---|---|---|---|
-| 1.1 | `format_telemetry` | `format_sample` | `format_invoice` |
-| 1.2 | `filter_signal` | `filter_measurements` | `filter_prices` |
-| 1.3 | `restructure_payload` | `restructure_results` | `restructure_order` |
-| 2.1 | `GET /sensor/{id}` | `GET /sample/{id}` | `GET /product/{id}` |
-| 2.2 | `POST /samples` (voltage) | `POST /samples` (pH) | `POST /reviews` (rating) |
-| 2.3 | `store_reading` | `store_measurement` | `store_sale` |
-| 2.4 | `fetch_voltage` | `fetch_reading` | `fetch_exchange_rate` |
-| 4.1 | `dispatch` (ADC, PWM) | `dispatch` (DNA, ATP) | `dispatch` (ROI, KPI) |
+| Field | Theme | Mission 1.1 |
+|---|---|---|
+| Electronics / ECE | sensors and signals (the original) | `format_telemetry` |
+| Computer science / IT | servers and logs | `format_clock` |
+| Other engineering | gauges and inspections | `format_gauge` |
+| Biology / life sciences | lab samples | `format_sample` |
+| Chemistry, physics or other science | experiments | `format_measurement` |
+| Business / finance | invoices and shops | `format_invoice` |
+| Design / arts | layers, assets and colours | `format_layer` |
+| Something else | everyday life: weather, trips, expenses | `format_weather` |
 
-Variant starter files are saved as `level_1_1_biology.py` and so on, so changing your field later never overwrites your work, and your progress carries over. Boot Camp uses everyday examples for everyone. **The four room projects still use electronics sample files**, so expect a few unfamiliar terms there. Players from other fields keep the electronics examples until their field is added.
+Variant starter files are saved as `level_1_1_biology.py` and so on, so changing your field later never overwrites your work, and your progress carries over. Boot Camp uses everyday examples for everyone. **The four room projects still use electronics sample files**, so expect a few unfamiliar terms there.
 
 Level tiers, goals, onboarding questions and placement questions live in `content/paths.json`.
 
