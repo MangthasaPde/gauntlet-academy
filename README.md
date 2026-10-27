@@ -13,6 +13,16 @@ cd gauntlet-academy
 ./setup_and_run.sh
 ```
 
+**Windows:** install Python 3.12 from python.org (tick *Add python.exe to PATH*), then in PowerShell or Command Prompt:
+
+```bat
+git clone https://github.com/MangthasaPde/gauntlet-academy.git
+cd gauntlet-academy
+setup_and_run.bat
+```
+
+Use `set GAUNTLET_PORT=8100` before running to change the port. On Windows the only runaway-code protection is the 45-second timeout. Linux works with `./setup_and_run.sh`.
+
 No git? On the GitHub page, choose **Code → Download ZIP**, extract it, change into the extracted folder in Terminal, and run `bash setup_and_run.sh`.
 
 Open **http://localhost:8000**. Keep Terminal running; press Ctrl+C to stop. First launch needs internet access and may take several minutes to install Chroma and the other dependencies. Later launches reuse `.venv` and work offline for lessons, quizzes and verification. There are no CDN fonts, CSS libraries or scripts.

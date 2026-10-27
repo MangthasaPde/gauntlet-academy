@@ -25,14 +25,14 @@ DATA=Path(os.environ.get('GAUNTLET_DATA',ROOT/'data'))
 PORT=os.environ.get('GAUNTLET_PORT','8000')
 WORK=Path(os.environ.get('GAUNTLET_WORKSPACE',ROOT/'workspace')).resolve()
 DATA.mkdir(parents=True,exist_ok=True); WORK.mkdir(parents=True,exist_ok=True)
-CUR=json.loads((ROOT/'content/curriculum.json').read_text())
-BOSSES=json.loads((ROOT/'content/bosses.json').read_text())
-LESSONS=json.loads((ROOT/'content/lessons.json').read_text())
-PATHS=json.loads((ROOT/'content/paths.json').read_text())
+CUR=json.loads((ROOT/'content/curriculum.json').read_text(encoding='utf-8'))
+BOSSES=json.loads((ROOT/'content/bosses.json').read_text(encoding='utf-8'))
+LESSONS=json.loads((ROOT/'content/lessons.json').read_text(encoding='utf-8'))
+PATHS=json.loads((ROOT/'content/paths.json').read_text(encoding='utf-8'))
 TIERS=PATHS['tiers']
 # Field overlays: wording (and, where the original ties the code to electronics, a whole
 # alternative contract) for players from a given field. See content/fields/*.json.
-FIELDS={f.stem:json.loads(f.read_text()) for f in sorted((ROOT/'content/fields').glob('*.json'))}
+FIELDS={f.stem:json.loads(f.read_text(encoding='utf-8')) for f in sorted((ROOT/'content/fields').glob('*.json'))}
 ITEMS={x['id']:x for x in CUR['levels']+BOSSES}
 LOCK=threading.RLock()
 BUSY=False
@@ -328,10 +328,18 @@ def initialize(body:Quest):
             if not helper.exists(): shutil.copy2(ROOT/'gauntlet_ai.py',helper)
         return dict(path=str(dest),created=created,message='Files initialized. Existing work is preserved.' if created else 'Quest files already exist; your work was preserved.')
 
+def kill_tree(proc):
+    """Kill the verification process and any children it started (process group on Unix, taskkill on Windows)."""
+    if os.name=='nt':
+        subprocess.run(['taskkill','/F','/T','/PID',str(proc.pid)],capture_output=True)
+        return
+    try: os.killpg(proc.pid,signal.SIGKILL)
+    except ProcessLookupError: pass
+
 def run_verification(id):
     test=ROOT/'verification'/('test_'+id.replace('.','_')+'.py')
-    env={k:v for k,v in os.environ.items() if k in ('PATH','HOME','TMPDIR','LANG','SYSTEMROOT')}
-    env.update(GAUNTLET_WORKSPACE=str(WORK),PYTHONPATH=str(ROOT),PYTEST_DISABLE_PLUGIN_AUTOLOAD='1',TOKENIZERS_PARALLELISM='false',ANONYMIZED_TELEMETRY='false')
+    env={k:v for k,v in os.environ.items() if k in ('PATH','HOME','TMPDIR','LANG','SYSTEMROOT','USERPROFILE','TEMP','TMP','PATHEXT','COMSPEC','APPDATA','LOCALAPPDATA')}
+    env.update(PYTHONUTF8='1',GAUNTLET_WORKSPACE=str(WORK),PYTHONPATH=str(ROOT),PYTEST_DISABLE_PLUGIN_AUTOLOAD='1',TOKENIZERS_PARALLELISM='false',ANONYMIZED_TELEMETRY='false')
     # A separate process permits timeout/termination; this is NOT an OS security sandbox.
     cmd=[sys.executable,str(ROOT/'app/runner.py'),str(test)]
     with tempfile.TemporaryFile() as log:
@@ -339,11 +347,10 @@ def run_verification(id):
         timed_out=False
         try: proc.wait(timeout=45)
         except subprocess.TimeoutExpired:
-            timed_out=True;os.killpg(proc.pid,signal.SIGKILL);proc.wait()
+            timed_out=True;kill_tree(proc);proc.wait()
         finally:
             # Remove lingering child processes created by learner code.
-            try: os.killpg(proc.pid,signal.SIGKILL)
-            except ProcessLookupError: pass
+            kill_tree(proc)
         log.seek(0);output=log.read(24000).decode('utf-8',errors='replace')
     if timed_out: output+='\nVerification exceeded 45 seconds. Check for infinite loops or network calls.'
     return proc.returncode==0 and not timed_out,output
