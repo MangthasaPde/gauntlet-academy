@@ -966,7 +966,8 @@ function withSetup(screen) {
 
 // The profile questions, then the placement check unless they've never coded.
 function onboardSteps() {
-  const steps = setup.questions.map(q => ({kind: 'question', q}));
+  const steps = state.profile ? [] : [{kind: 'name'}];
+  setup.questions.forEach(q => steps.push({kind: 'question', q}));
   if (onboard.answers.experience && onboard.answers.experience !== 'never')
     setup.placement.forEach((q, n) => steps.push({kind: 'placement', q, n}));
   return steps;
@@ -975,6 +976,7 @@ function onboardSteps() {
 function start() {
   if (!onboard) onboard = {i: 0, answers: {}, placement: []};
   const steps = onboardSteps(), step = steps[onboard.i], first = !state.profile;
+  if (step.kind === 'name') return nameStep(steps);
   const placing = step.kind === 'placement';
   const chosen = placing ? onboard.placement[step.n] : onboard.answers[step.q.id];
   render(`<div class="wrap narrow onboarding">
@@ -1010,6 +1012,34 @@ function start() {
   keyNav = e => {
     const n = Number(e.key);
     if (n >= 1 && n <= step.q.options.length) answer(n - 1);
+  };
+}
+
+// First setup step: ask who is playing. Prefilled with any name already kept in this browser.
+function nameStep(steps) {
+  render(`<div class="wrap narrow onboarding">
+    <header class="page-head">
+      <span class="eyebrow">Welcome</span>
+      <h1>What should we call you?</h1>
+      <p>Used for the greeting when you open the game. It's kept in this browser only.</p>
+    </header>
+    <div class="page-progress"><span>Step 1 of ${steps.length}</span><div class="bar"><i style="width:${1 / steps.length * 100}%"></i></div></div>
+    <article class="card">
+      <form class="name-form" id="ob-name-form">
+        <input id="ob-name" maxlength="24" value="${esc(playerName())}" placeholder="Your name" aria-label="Your name" required>
+        <button class="btn" type="submit">Continue</button>
+      </form>
+    </article>
+  </div>`, '');
+  keyNav = null;
+  setTimeout(() => $('#ob-name')?.focus(), 50);
+  $('#ob-name-form').onsubmit = e => {
+    e.preventDefault();
+    const n = $('#ob-name').value.trim().slice(0, 24);
+    if (!n) return;
+    store('playerName', n);
+    onboard.i++;
+    start();
   };
 }
 
